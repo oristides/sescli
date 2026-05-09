@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "sesc-sp-cli": {
+      "source": "oristides/sescli",
+      "sourceType": "github",
+      "skillPath": "skills/SKILL.md",
+      "computedHash": "df507367d43a1840fea3a7a437298d10d8279b12b66670c5e741ffbd9c4c72e3"
+    }
+  }
+}

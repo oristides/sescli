@@ -97,9 +97,9 @@ The primary query model mirrors **when / where / what**:
 go run ./cmd/sescli --when tomorrow --where ipiranga --what cinema --format whatsapp --limit 20
 ```
 
-See `sescli help` after install. Agent-oriented usage is documented in [`skills/sescli/SKILL.md`](skills/sescli/SKILL.md).
+See `sescli help` after install. Agent-oriented usage is documented in [`skills/SKILL.md`](skills/SKILL.md).
 
-**References:** [references/config.md](references/config.md), [references/WHERE.md](references/WHERE.md), [references/WHEN.md](references/WHEN.md), [references/MCP.md](references/MCP.md).
+**References:** [skills/references/config.md](skills/references/config.md), [skills/references/WHERE.md](skills/references/WHERE.md), [skills/references/WHEN.md](skills/references/WHEN.md), [skills/references/MCP.md](skills/references/MCP.md).
 
 ## Development
 
@@ -123,7 +123,7 @@ Badges assume workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on
 
 On startup it runs **`config.Ensure`** and **`config.Load`** — **`SESCLI_CONFIG`** and **`~/.config/sescli/config.json`** (Linux) behave like the CLI.
 
-**Full docs (every argument, Cursor setup, etiquette):** [references/MCP.md](references/MCP.md).
+**Full docs (every argument, Cursor setup, etiquette):** [skills/references/MCP.md](skills/references/MCP.md).
 
 Minimal Cursor (**Settings → MCP**):
 

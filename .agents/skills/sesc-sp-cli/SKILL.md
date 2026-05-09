@@ -27,17 +27,17 @@ sescli --when 'next thursday' --where zona-sul --what all --limit 10
 
 In-repo specs (resolution order, presets, timezone, edge cases):
 
-- **`--when`:** [WHEN.md](../../references/WHEN.md)
-- **`--where`:** [WHERE.md](../../references/WHERE.md)
-- **Config & presets:** [config.md](../../references/config.md)
-- **MCP server (`sesmcp`):** [MCP.md](../../references/MCP.md)
+- **`--when`:** [WHEN.md](../../../skills/references/WHEN.md)
+- **`--where`:** [WHERE.md](../../../skills/references/WHERE.md)
+- **Config & presets:** [config.md](../../../skills/references/config.md)
+- **MCP server (`sesmcp`):** [MCP.md](../../../skills/references/MCP.md)
 
 ## Key flags
 
 | Flag | What it does |
 |---|---|
-| `--when` | `today`, `tomorrow`, `weekend`, `YYYY-MM-DD`, natural phrases — [full guide](../../references/WHEN.md) |
-| `--where` | Venue name (`ipiranga`), zone (`zona-sul`), preset (`centro`) — [full guide](../../references/WHERE.md) |
+| `--when` | `today`, `tomorrow`, `weekend`, `YYYY-MM-DD`, natural phrases — [full guide](../../../skills/references/WHEN.md) |
+| `--where` | Venue name (`ipiranga`), zone (`zona-sul`), preset (`centro`) — [full guide](../../../skills/references/WHERE.md) |
 | `--what` | Activity type: `cinema`, `teatro`, `oficina`, `all` |
 | `--format` | `json` (default), `whatsapp` (one line per event), `table`, `pretty` |
 | `--limit` | Max events returned |
@@ -77,4 +77,4 @@ sescli config init       # create/reset defaults
 sescli config setup      # interactive setup
 ```
 
-For preset management, custom venue lists, curating `centro`, env vars (`SESCLI_CONFIG`), and CLI commands — see **[config.md](../../references/config.md)**.
+For preset management, custom venue lists, curating `centro`, env vars (`SESCLI_CONFIG`), and CLI commands — see **[config.md](../../../skills/references/config.md)**.

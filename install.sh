@@ -127,7 +127,7 @@ if install_from_release; then
   echo "install.sh: installed release binaries → ${INSTALL_DIR}" >&2
   warn_path
   echo "" >&2
-  echo "Next: sescli help   ·   sesmcp (stdio MCP — see README references/MCP.md)" >&2
+  echo "Next: sescli help   ·   sesmcp (stdio MCP — see skills/references/MCP.md)" >&2
   exit 0
 fi
 
@@ -138,7 +138,7 @@ if install_from_source_go; then
   echo "install.sh: built from source → ${INSTALL_DIR}" >&2
   warn_path
   echo "" >&2
-  echo "Next: sescli help   ·   sesmcp (stdio MCP — see README references/MCP.md)" >&2
+  echo "Next: sescli help   ·   sesmcp (stdio MCP — see skills/references/MCP.md)" >&2
   exit 0
 fi
 
