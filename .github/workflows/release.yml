@@ -6,6 +6,11 @@ on:
     tags:
       - "v*"
 
+# Avoid overlapping builds if two workflows fire for the same ref.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 

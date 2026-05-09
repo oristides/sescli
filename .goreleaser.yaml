@@ -66,3 +66,6 @@ checksum:
 
 release:
   draft: false
+  # Retry / partial uploads: GitHub returns 422 if an asset filename already exists;
+  # GoReleaser deletes the conflicting asset and re-uploads.
+  replace_existing_artifacts: true

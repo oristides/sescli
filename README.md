@@ -33,12 +33,38 @@ Add to **PATH** if needed:
 export PATH="$PATH:$HOME/.local/bin"
 ```
 
-### Publishing releases (best practice)
+### Automated releases (how it works)
 
-- **Prefer version tags** (**`v*`** semver) rather than dumping manual zip files: reproducible artefacts, checksums, and changelog discipline.
-- Pushing **`v1.2.3`** triggers [`.github/workflows/release.yml`](.github/workflows/release.yml), which runs [**GoReleaser**](https://goreleaser.com/) ([`.goreleaser.yaml`](.goreleaser.yaml)): cross-builds **`sescli`** + **`sesmcp`**, produces **`Tar.gz`** / **`zip`**, uploads them to GitHub Releases, and writes **`checksums.txt`**.
-- Without a tagged release (or CI **GoReleaser**), **`install.sh` still falls back** to cloning and **`go install`**, so installers are never blocked—but **shipping tags** gives users binaries without needing Go.
+**You already have this wired up:** [.github/workflows/release.yml](.github/workflows/release.yml) runs [**GoReleaser**](https://goreleaser.com/) [.goreleaser.yaml](.goreleaser.yaml) whenever a **`v*`** semver tag is **pushed** to GitHub. It attaches **`sescli_…`** / **`sesmcp_…`** archives and **`checksums.txt`** to a **GitHub Release** — no manual zip uploads.
 
+**One-time prerequisites**
+
+1. The workflow and config are **committed on the default branch** (usually **`main`**).
+2. **Actions must be enabled** on the repo (forks sometimes default Actions off).
+
+**Publish a release (what you actually do)**
+
+1. Merge whatever you want in this release onto **`main`** and **`git pull`** locally.
+2. Pick the next semver, e.g. **`v0.3.1`** (the **`Release`** workflow only matches tags like **`v1.2.3`**).
+3. Create and push the tag (**either option**):
+
+   ```bash
+   # Option A — helper script (from repo root)
+   ./scripts/release.sh v0.3.1
+   ```
+
+   ```bash
+   # Option B — by hand
+   git tag -a v0.3.1 -m "Release v0.3.1"
+   git push origin v0.3.1
+   ```
+
+4. Open **GitHub → Actions** and wait for the **Release** run to turn green.
+5. Open **GitHub → Releases** and confirm artefacts; **`curl … install.sh | sh`** will then prefer **latest release** binaries when asset names match the platform.
+
+If a workflow **retry** fails with **`already_exists`** on uploads, GitHub kept the filenames from an earlier partial run — GoReleaser is configured with **`release.replace_existing_artifacts`** in [`.goreleaser.yaml`](.goreleaser.yaml) so a successful run deletes conflicting assets and re-uploads them. Without that behaviour, manually remove release assets or open a draft release cleanly.
+
+Do not **force-move** an existing semver tag to a different commit. For a new intentional release, use a **fresh `v*` tag**; **`install.sh`** resolves **`releases/latest`**.
 
 ### With Go (without the script)
 
