@@ -1,7 +1,7 @@
 # sescli
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/OWNER/REPO/graph/badge.svg)](https://app.codecov.io/gh/OWNER/REPO)
+[![CI](https://github.com/oristides/sescli/actions/workflows/ci.yml/badge.svg)](https://github.com/oristides/sescli/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/oristides/sescli/graph/badge.svg)](https://app.codecov.io/gh/oristides/sescli)
 
 `sescli` is a small Go CLI for querying **SESC São Paulo** public programming (venues, facets, normalized events).
 
@@ -110,7 +110,7 @@ go test -tags=integration ./...   # fewer tests; hits the real API
 
 In GitHub Actions, unit tests upload coverage to Codecov **when** the repository defines a `CODECOV_TOKEN` secret; the workflow stays green without it (`fail_ci_if_error: false`).
 
-Replace `OWNER/REPO` in the badges above with your GitHub slug after moving this tree into its own repo (badges assume workflow file `.github/workflows/ci.yml`).
+Badges assume workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on **`oristides/sescli`**. For a fork, change the **`oristides/sescli`** segments in both badge URLs to your **`owner/repo`**. Codecov stays grey until that project exists on codecov.io and has reports.
 
 ## MCP (Model Context Protocol)
 
