@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Unit tests with coverage
+        run: |
+          set -euo pipefail
+          go test ./... -count=1 -race \
+            -coverprofile=coverage.out -covermode=atomic
+          echo "## Coverage summary" >> "$GITHUB_STEP_SUMMARY"
+          go tool cover -func=coverage.out | tail -n1 >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.out
+          fail_ci_if_error: false
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out

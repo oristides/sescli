@@ -1,0 +1,21 @@
+name: Integration (live SESC API)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly smoke against the public API — adjust or disable if too noisy for your fork.
+    - cron: '45 17 * * 2'
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Live API tests (tags=integration)
+        run: go test -tags=integration ./... -count=1 -timeout 15m -race

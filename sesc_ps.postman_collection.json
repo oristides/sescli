@@ -1,0 +1,716 @@
+{
+	"info": {
+		"_postman_id": "f0be1c7a-24c8-4b8e-b5a6-73a42627bada",
+		"name": "Sesc ps",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17916759"
+	},
+	"item": [
+		{
+			"name": "initial",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en-PR;q=0.9,en;q=0.8"
+					},
+					{
+						"key": "dnt",
+						"value": "1"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://www.sescsp.org.br/programacao/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Linux\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Cookie",
+						"value": "PHPSESSID=ra9i0bo3osioki9j8s4h38ctbh; pll_language=pt; _gcl_au=1.1.810082664.1778275493; _clck=9melqa%5E2%5Eg5v%5E0%5E2319; _ga_N6DQ9YJMVT=GS2.1.s1778275744$o1$g1$t1778275809$j55$l0$h0; _gid=GA1.3.462302397.1778275916; _clsk=lr6mr4%5E1778275932522%5E5%5E1%5Eq.clarity.ms%2Fcollect; _ga_JLYCH2J255=GS2.1.s1778275492$o1$g1$t1778275949$j42$l0$h1409052865; _ga_3JJRWHRWZV=deleted; _ga_3JJRWHRWZV=GS2.1.s1778275493$o1$g1$t1778275949$j42$l0$h0; _ga_6ZKY79F542=GS2.1.s1778275915$o1$g1$t1778275949$j26$l0$h0; _ga=GA1.3.248594758.1778275493; AWSALB=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I; AWSALBCORS=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I"
+					}
+				],
+				"url": {
+					"raw": "https://www.sescsp.org.br/wp-json/wp/v1/dinamico?unidades=&categorias=&gratuito=&online=&publico_tag=adulto&tipos_atividades=&tipos_linguagens=&modes=unidade",
+					"protocol": "https",
+					"host": [
+						"www",
+						"sescsp",
+						"org",
+						"br"
+					],
+					"path": [
+						"wp-json",
+						"wp",
+						"v1",
+						"dinamico"
+					],
+					"query": [
+						{
+							"key": "unidades",
+							"value": ""
+						},
+						{
+							"key": "categorias",
+							"value": ""
+						},
+						{
+							"key": "gratuito",
+							"value": ""
+						},
+						{
+							"key": "online",
+							"value": ""
+						},
+						{
+							"key": "publico_tag",
+							"value": "adulto"
+						},
+						{
+							"key": "tipos_atividades",
+							"value": ""
+						},
+						{
+							"key": "tipos_linguagens",
+							"value": ""
+						},
+						{
+							"key": "modes",
+							"value": "unidade"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "categorias",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en-PR;q=0.9,en;q=0.8"
+					},
+					{
+						"key": "dnt",
+						"value": "1"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://www.sescsp.org.br/programacao/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Linux\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Cookie",
+						"value": "PHPSESSID=ra9i0bo3osioki9j8s4h38ctbh; pll_language=pt; _gcl_au=1.1.810082664.1778275493; _clck=9melqa%5E2%5Eg5v%5E0%5E2319; _ga_N6DQ9YJMVT=GS2.1.s1778275744$o1$g1$t1778275809$j55$l0$h0; _gid=GA1.3.462302397.1778275916; _clsk=lr6mr4%5E1778275932522%5E5%5E1%5Eq.clarity.ms%2Fcollect; _ga_JLYCH2J255=GS2.1.s1778275492$o1$g1$t1778275949$j42$l0$h1409052865; _ga_3JJRWHRWZV=deleted; _ga_3JJRWHRWZV=GS2.1.s1778275493$o1$g1$t1778275949$j42$l0$h0; _ga_6ZKY79F542=GS2.1.s1778275915$o1$g1$t1778275949$j26$l0$h0; _ga=GA1.3.248594758.1778275493; AWSALB=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I; AWSALBCORS=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I"
+					}
+				],
+				"url": {
+					"raw": "https://www.sescsp.org.br/wp-json/wp/v1/dinamico?unidades=761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66&categorias=&gratuito=&online=&publico_tag=adulto&tipos_atividades=&tipos_linguagens=&modes=tipos_linguagens",
+					"protocol": "https",
+					"host": [
+						"www",
+						"sescsp",
+						"org",
+						"br"
+					],
+					"path": [
+						"wp-json",
+						"wp",
+						"v1",
+						"dinamico"
+					],
+					"query": [
+						{
+							"key": "unidades",
+							"value": "761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66"
+						},
+						{
+							"key": "categorias",
+							"value": ""
+						},
+						{
+							"key": "gratuito",
+							"value": ""
+						},
+						{
+							"key": "online",
+							"value": ""
+						},
+						{
+							"key": "publico_tag",
+							"value": "adulto"
+						},
+						{
+							"key": "tipos_atividades",
+							"value": ""
+						},
+						{
+							"key": "tipos_linguagens",
+							"value": ""
+						},
+						{
+							"key": "modes",
+							"value": "tipos_linguagens"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "subcategorias",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en-PR;q=0.9,en;q=0.8"
+					},
+					{
+						"key": "dnt",
+						"value": "1"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://www.sescsp.org.br/programacao/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Linux\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Cookie",
+						"value": "PHPSESSID=ra9i0bo3osioki9j8s4h38ctbh; pll_language=pt; _gcl_au=1.1.810082664.1778275493; _clck=9melqa%5E2%5Eg5v%5E0%5E2319; _ga_N6DQ9YJMVT=GS2.1.s1778275744$o1$g1$t1778275809$j55$l0$h0; _gid=GA1.3.462302397.1778275916; _clsk=lr6mr4%5E1778275932522%5E5%5E1%5Eq.clarity.ms%2Fcollect; _ga_JLYCH2J255=GS2.1.s1778275492$o1$g1$t1778275949$j42$l0$h1409052865; _ga_3JJRWHRWZV=deleted; _ga_3JJRWHRWZV=GS2.1.s1778275493$o1$g1$t1778275949$j42$l0$h0; _ga_6ZKY79F542=GS2.1.s1778275915$o1$g1$t1778275949$j26$l0$h0; _ga=GA1.3.248594758.1778275493; AWSALB=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I; AWSALBCORS=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I"
+					}
+				],
+				"url": {
+					"raw": "https://www.sescsp.org.br/wp-json/wp/v1/dinamico?unidades=761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66&categorias=&gratuito=&online=&publico_tag=adulto&tipos_atividades=&tipos_linguagens=&subcategoria=true&modes=tipos_linguagens",
+					"protocol": "https",
+					"host": [
+						"www",
+						"sescsp",
+						"org",
+						"br"
+					],
+					"path": [
+						"wp-json",
+						"wp",
+						"v1",
+						"dinamico"
+					],
+					"query": [
+						{
+							"key": "unidades",
+							"value": "761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66"
+						},
+						{
+							"key": "categorias",
+							"value": ""
+						},
+						{
+							"key": "gratuito",
+							"value": ""
+						},
+						{
+							"key": "online",
+							"value": ""
+						},
+						{
+							"key": "publico_tag",
+							"value": "adulto"
+						},
+						{
+							"key": "tipos_atividades",
+							"value": ""
+						},
+						{
+							"key": "tipos_linguagens",
+							"value": ""
+						},
+						{
+							"key": "subcategoria",
+							"value": "true"
+						},
+						{
+							"key": "modes",
+							"value": "tipos_linguagens"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "acessos_pagos",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en-PR;q=0.9,en;q=0.8"
+					},
+					{
+						"key": "dnt",
+						"value": "1"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://www.sescsp.org.br/programacao/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Linux\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Cookie",
+						"value": "PHPSESSID=ra9i0bo3osioki9j8s4h38ctbh; pll_language=pt; _gcl_au=1.1.810082664.1778275493; _clck=9melqa%5E2%5Eg5v%5E0%5E2319; _ga_N6DQ9YJMVT=GS2.1.s1778275744$o1$g1$t1778275809$j55$l0$h0; _gid=GA1.3.462302397.1778275916; _clsk=lr6mr4%5E1778275932522%5E5%5E1%5Eq.clarity.ms%2Fcollect; _ga_JLYCH2J255=GS2.1.s1778275492$o1$g1$t1778275949$j42$l0$h1409052865; _ga_3JJRWHRWZV=deleted; _ga_3JJRWHRWZV=GS2.1.s1778275493$o1$g1$t1778275949$j42$l0$h0; _ga_6ZKY79F542=GS2.1.s1778275915$o1$g1$t1778275949$j26$l0$h0; _ga=GA1.3.248594758.1778275493; AWSALB=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I; AWSALBCORS=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I"
+					}
+				],
+				"url": {
+					"raw": "https://www.sescsp.org.br/wp-json/wp/v1/dinamico?unidades=761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66&categorias=&gratuito=&online=&publico_tag=adulto&tipos_atividades=&tipos_linguagens=&modes=acesso",
+					"protocol": "https",
+					"host": [
+						"www",
+						"sescsp",
+						"org",
+						"br"
+					],
+					"path": [
+						"wp-json",
+						"wp",
+						"v1",
+						"dinamico"
+					],
+					"query": [
+						{
+							"key": "unidades",
+							"value": "761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66"
+						},
+						{
+							"key": "categorias",
+							"value": ""
+						},
+						{
+							"key": "gratuito",
+							"value": ""
+						},
+						{
+							"key": "online",
+							"value": ""
+						},
+						{
+							"key": "publico_tag",
+							"value": "adulto"
+						},
+						{
+							"key": "tipos_atividades",
+							"value": ""
+						},
+						{
+							"key": "tipos_linguagens",
+							"value": ""
+						},
+						{
+							"key": "modes",
+							"value": "acesso"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "atividades",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en-PR;q=0.9,en;q=0.8"
+					},
+					{
+						"key": "dnt",
+						"value": "1"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://www.sescsp.org.br/programacao/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Linux\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Cookie",
+						"value": "PHPSESSID=ra9i0bo3osioki9j8s4h38ctbh; pll_language=pt; _gcl_au=1.1.810082664.1778275493; _clck=9melqa%5E2%5Eg5v%5E0%5E2319; _ga_N6DQ9YJMVT=GS2.1.s1778275744$o1$g1$t1778275809$j55$l0$h0; _gid=GA1.3.462302397.1778275916; _clsk=lr6mr4%5E1778275932522%5E5%5E1%5Eq.clarity.ms%2Fcollect; _ga_JLYCH2J255=GS2.1.s1778275492$o1$g1$t1778275949$j42$l0$h1409052865; _ga_3JJRWHRWZV=deleted; _ga_3JJRWHRWZV=GS2.1.s1778275493$o1$g1$t1778275949$j42$l0$h0; _ga_6ZKY79F542=GS2.1.s1778275915$o1$g1$t1778275949$j26$l0$h0; _ga=GA1.3.248594758.1778275493; AWSALB=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I; AWSALBCORS=prTBZmtW+UJKqG3gMEGiwJVHyRXuCjehdO5/Hw9oJmLktxHn7Gpb8rfUu3iIPjcdXsUmch8f0ujRq7f8g4mt2OZ7KRLpOgQVkiit3S6aoROgysgqDe9ugTh4cw/I"
+					}
+				],
+				"url": {
+					"raw": "https://www.sescsp.org.br/wp-json/wp/v1/atividades/filter?local=761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66&categoria=&gratuito=&online=&publico=adulto&atividade=&linguagem=&data_inicial=&data_final=&tipo=atividade&dinamico=true&ppp=300&page=1",
+					"protocol": "https",
+					"host": [
+						"www",
+						"sescsp",
+						"org",
+						"br"
+					],
+					"path": [
+						"wp-json",
+						"wp",
+						"v1",
+						"atividades",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "local",
+							"value": "761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66"
+						},
+						{
+							"key": "categoria",
+							"value": ""
+						},
+						{
+							"key": "gratuito",
+							"value": ""
+						},
+						{
+							"key": "online",
+							"value": ""
+						},
+						{
+							"key": "publico",
+							"value": "adulto"
+						},
+						{
+							"key": "atividade",
+							"value": ""
+						},
+						{
+							"key": "linguagem",
+							"value": ""
+						},
+						{
+							"key": "data_inicial",
+							"value": ""
+						},
+						{
+							"key": "data_final",
+							"value": ""
+						},
+						{
+							"key": "tipo",
+							"value": "atividade"
+						},
+						{
+							"key": "dinamico",
+							"value": "true"
+						},
+						{
+							"key": "ppp",
+							"value": "300"
+						},
+						{
+							"key": "page",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "tipo_atividades",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "accept",
+						"value": "application/json, text/plain, */*"
+					},
+					{
+						"key": "accept-language",
+						"value": "en-US,en-PR;q=0.9,en;q=0.8"
+					},
+					{
+						"key": "dnt",
+						"value": "1"
+					},
+					{
+						"key": "priority",
+						"value": "u=1, i"
+					},
+					{
+						"key": "referer",
+						"value": "https://www.sescsp.org.br/programacao/"
+					},
+					{
+						"key": "sec-ch-ua",
+						"value": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\""
+					},
+					{
+						"key": "sec-ch-ua-mobile",
+						"value": "?0"
+					},
+					{
+						"key": "sec-ch-ua-platform",
+						"value": "\"Linux\""
+					},
+					{
+						"key": "sec-fetch-dest",
+						"value": "empty"
+					},
+					{
+						"key": "sec-fetch-mode",
+						"value": "cors"
+					},
+					{
+						"key": "sec-fetch-site",
+						"value": "same-origin"
+					},
+					{
+						"key": "user-agent",
+						"value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+					},
+					{
+						"key": "Cookie",
+						"value": "PHPSESSID=ra9i0bo3osioki9j8s4h38ctbh; pll_language=pt; _gcl_au=1.1.810082664.1778275493; _clck=9melqa%5E2%5Eg5v%5E0%5E2319; _ga_N6DQ9YJMVT=GS2.1.s1778275744$o1$g1$t1778275809$j55$l0$h0; _gid=GA1.3.462302397.1778275916; _ga_JLYCH2J255=GS2.1.s1778275492$o1$g1$t1778275949$j42$l0$h1409052865; _ga_3JJRWHRWZV=deleted; _ga_3JJRWHRWZV=GS2.1.s1778275493$o1$g1$t1778275949$j42$l0$h0; _ga=GA1.3.248594758.1778275493; _ga_6ZKY79F542=GS2.1.s1778275915$o1$g1$t1778276680$j60$l0$h0; _clsk=lr6mr4%5E1778277581657%5E6%5E1%5Eq.clarity.ms%2Fcollect; AWSALB=xMYX7vXjRQ31jsRUN5+klJ0heUzLgVBPHsf8Wyi17N/RggTaT50sV2CB6QW0b729x1FJg6+G61vdhWXYAJfDVmzOfGcWvr4TowwVcVZeUIIkUl4L0S62FIhche6e; AWSALBCORS=xMYX7vXjRQ31jsRUN5+klJ0heUzLgVBPHsf8Wyi17N/RggTaT50sV2CB6QW0b729x1FJg6+G61vdhWXYAJfDVmzOfGcWvr4TowwVcVZeUIIkUl4L0S62FIhche6e"
+					}
+				],
+				"url": {
+					"raw": "https://www.sescsp.org.br/wp-json/wp/v1/dinamico?unidades=761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66&categorias=&gratuito=&online=&publico_tag=adulto&tipos_atividades=cinema,cursos-e-oficinas&tipos_linguagens=&modes=acesso",
+					"protocol": "https",
+					"host": [
+						"www",
+						"sescsp",
+						"org",
+						"br"
+					],
+					"path": [
+						"wp-json",
+						"wp",
+						"v1",
+						"dinamico"
+					],
+					"query": [
+						{
+							"key": "unidades",
+							"value": "761,2,43,47,48,49,730,51,52,53,71,55,56,57,80,58,60,61,62,63,64,54,65,66,761,2,43,48,730,51,52,53,60,61,66"
+						},
+						{
+							"key": "categorias",
+							"value": ""
+						},
+						{
+							"key": "gratuito",
+							"value": ""
+						},
+						{
+							"key": "online",
+							"value": ""
+						},
+						{
+							"key": "publico_tag",
+							"value": "adulto"
+						},
+						{
+							"key": "tipos_atividades",
+							"value": "cinema,cursos-e-oficinas"
+						},
+						{
+							"key": "tipos_linguagens",
+							"value": ""
+						},
+						{
+							"key": "modes",
+							"value": "acesso"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
