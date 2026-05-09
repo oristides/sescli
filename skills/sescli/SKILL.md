@@ -30,6 +30,7 @@ In-repo specs (resolution order, presets, timezone, edge cases):
 - **`--when`:** [WHEN.md](../../references/WHEN.md)
 - **`--where`:** [WHERE.md](../../references/WHERE.md)
 - **Config & presets:** [config.md](../../references/config.md)
+- **MCP server (`sesmcp`):** [MCP.md](../../references/MCP.md)
 
 ## Key flags
 
