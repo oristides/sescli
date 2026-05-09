@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-const ProgramacaoReferer = "https://www.sescsp.org.br/programacao/"
-
 type Options struct {
 	Timeout time.Duration
 	Retries int
@@ -60,8 +58,6 @@ func (c *Client) getJSON(rawURL string, target any) error {
 		return err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Referer", ProgramacaoReferer)
-	req.Header.Set("User-Agent", "sescli/0.1 (+https://www.sescsp.org.br/programacao/)")
 
 	resp, err := c.http.Do(req)
 	if err != nil {

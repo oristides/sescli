@@ -11,7 +11,9 @@ The primary query model mirrors **when / where / what**:
 go run ./cmd/sescli --when tomorrow --where ipiranga --what cinema --format whatsapp --limit 20
 ```
 
-See `sescli help` after install. Agent-oriented usage is documented in [`skills/sesc-sp-cli/SKILL.md`](skills/sesc-sp-cli/SKILL.md).
+See `sescli help` after install. Agent-oriented usage is documented in [`skills/sescli/SKILL.md`](skills/sescli/SKILL.md).
+
+**References:** [references/config.md](references/config.md), [references/WHERE.md](references/WHERE.md), [references/WHEN.md](references/WHEN.md).
 
 ## Development
 

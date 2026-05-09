@@ -8,12 +8,10 @@ import (
 	"time"
 )
 
-func TestGetJSONSendsBrowserHeadersAndDecodes(t *testing.T) {
-	var referer, accept, ua string
+func TestGetJSONSendsAcceptAndDecodes(t *testing.T) {
+	var accept string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		referer = r.Header.Get("Referer")
 		accept = r.Header.Get("Accept")
-		ua = r.Header.Get("User-Agent")
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode([]map[string]string{{"ok": "yes"}})
 	}))
@@ -25,14 +23,8 @@ func TestGetJSONSendsBrowserHeadersAndDecodes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if referer != ProgramacaoReferer {
-		t.Fatalf("missing referer: %q", referer)
-	}
 	if accept != "application/json" {
 		t.Fatalf("unexpected accept: %q", accept)
-	}
-	if ua == "" {
-		t.Fatalf("expected user-agent")
 	}
 	if out[0]["ok"] != "yes" {
 		t.Fatalf("unexpected response %#v", out)
