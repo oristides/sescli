@@ -31,7 +31,7 @@ func main() {
 
 	type eventsArgs struct {
 		When       string `json:"when" jsonschema:"today, tomorrow, YYYY-MM-DD, weekend, or dotted/natural ranges"`
-		Where      string `json:"where" jsonschema:"preset or venue slug: centro, capital, ipiranga, …"`
+		Where      string `json:"where" jsonschema:"preset centro, zonas metropolitana|interior|litoral|zona-* , or venue slug (e.g. ipiranga)"`
 		What       string `json:"what" jsonschema:"cultural, all, cinema, teatro, sports, or CSV slugs"`
 		Format     string `json:"format" jsonschema:"json | pretty | whatsapp | table"`
 		Limit      int    `json:"limit"`
@@ -74,19 +74,20 @@ func main() {
 		}
 
 		domain, err := exec.BuildQuery(exec.QueryInput{
-			When:       args.When,
-			Where:      where,
-			Preset:     cfg.DefaultPreset,
-			Profile:    cfg.Profile,
-			What:       what,
-			Audience:   audience,
-			From:       args.From,
-			To:         args.To,
-			FromNow:    args.FromNow,
-			PerPage:    limit,
-			Page:       page,
-			Format:     format,
-			IncludeRaw: args.IncludeRaw,
+			When:          args.When,
+			Where:         where,
+			Preset:        cfg.DefaultPreset,
+			Profile:       cfg.Profile,
+			What:          what,
+			Audience:      audience,
+			From:          args.From,
+			To:            args.To,
+			FromNow:       args.FromNow,
+			PerPage:       limit,
+			Page:          page,
+			Format:        format,
+			IncludeRaw:    args.IncludeRaw,
+			PresetUnitIDs: cfg.Presets,
 		}, nowSP())
 		if err != nil {
 			return nil, nil, err

@@ -53,10 +53,7 @@ func Default() Config {
 		Format:        "json",
 		Limit:         defaults.PerPage,
 		Page:          defaults.Page,
-		Presets: map[string][]string{
-			"centro":  presets.CentroUnitIDs(),
-			"capital": presets.CapitalUnitIDs(),
-		},
+		Presets: presets.ClonePresetMap(presets.DefaultInstallPresets()),
 	}
 }
 
@@ -242,7 +239,7 @@ func normalize(cfg Config) Config {
 	cfg.Limit = cfg.Defaults.Limit
 	cfg.Page = cfg.Defaults.Page
 	if cfg.Presets == nil {
-		cfg.Presets = def.Presets
+		cfg.Presets = presets.ClonePresetMap(def.Presets)
 	}
 	return cfg
 }

@@ -1,45 +1,46 @@
 package presets
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
-func TestCapitalPresetKeepsBroadAPIGroupWithoutDuplicates(t *testing.T) {
-	ids := CapitalUnitIDs()
+func TestDefaultInstallCentroPresetMatchesZonaCentral(t *testing.T) {
+	zoneCentral, ok := UnitIDsWithUrbanMacroZone(ZoneCentral)
+	install := DefaultInstallPresets()
+	cent := install["centro"]
+	defaultsUnits := Defaults().UnitIDs
 
-	if len(ids) < 20 {
-		t.Fatalf("capital preset should include the broad API capital group, got %d ids", len(ids))
+	if !ok || len(zoneCentral) == 0 {
+		t.Fatalf("expected zonacentral ids")
 	}
-	if ids[0] != "761" || ids[1] != "2" {
-		t.Fatalf("capital preset should preserve the known leading IDs, got %#v", ids[:2])
+	if len(cent) == 0 {
+		t.Fatalf("expected seeded centro preset: %#v", install)
 	}
-
-	seen := map[string]bool{}
-	for _, id := range ids {
-		if seen[id] {
-			t.Fatalf("capital preset should deduplicate repeated Postman IDs, duplicated %s", id)
-		}
-		seen[id] = true
+	if !slices.Equal(cent, zoneCentral) {
+		t.Fatalf("install centro != zonacentral: %#v vs %#v", cent, zoneCentral)
+	}
+	if !slices.Equal(defaultsUnits, zoneCentral) {
+		t.Fatalf("defaults unit ids %#v vs zone %#v", defaultsUnits, zoneCentral)
 	}
 }
 
-func TestCentroPresetIsDefaultAndExcludesFarCapitalUnits(t *testing.T) {
-	ids := CentroUnitIDs()
+func TestDefaultCentroUsesGeographicFilterNotRetrofits(t *testing.T) {
+	ids := DefaultCentroPresetUnitIDs()
 	joined := map[string]bool{}
 	for _, id := range ids {
 		joined[id] = true
 	}
+	for id := range joined {
+		if UrbanMacro(id) != ZoneCentral {
+			t.Fatalf("id %s in default centro preset is not zonacentral (got macro %q)", id, UrbanMacro(id))
+		}
+	}
+}
 
-	for _, far := range []string{"55", "57", "58", "64", "65", "71"} {
-		if joined[far] {
-			t.Fatalf("centro default should not include far capital unit %s in %#v", far, ids)
-		}
-	}
-	for _, central := range []string{"2", "43", "51", "52", "53"} {
-		if !joined[central] {
-			t.Fatalf("centro default should include %s in %#v", central, ids)
-		}
-	}
+func TestDefaultsPresetName(t *testing.T) {
 	if Defaults().Preset != "centro" {
-		t.Fatalf("default preset should be centro, got %q", Defaults().Preset)
+		t.Fatalf("expected default preset name centro")
 	}
 }
 
@@ -58,8 +59,17 @@ func TestDefaultProfileMatchesAdultCulturalTaste(t *testing.T) {
 	if got := defaults.ActivityTypes; len(got) < 2 {
 		t.Fatalf("expected theater/cinema/workshop activity types, got %#v", got)
 	}
-	if len(defaults.UnitIDs) == 0 || defaults.UnitIDs[0] != "2" {
-		t.Fatalf("expected default centro units, got %#v", defaults.UnitIDs)
+	if len(defaults.UnitIDs) == 0 {
+		t.Fatalf("expected default zonacentral-derived units")
+	}
+}
+
+func TestClonePresetMapIsIndependent(t *testing.T) {
+	a := DefaultInstallPresets()
+	b := ClonePresetMap(a)
+	b["centro"] = append(b["centro"], "999")
+	if slices.Equal(a["centro"], b["centro"]) {
+		t.Fatal("slice should have been copied")
 	}
 }
 

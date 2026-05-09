@@ -7,6 +7,7 @@ func TestResolveUnitQueriesFindsNamesSlugsIDsAndTypos(t *testing.T) {
 		query string
 		want  string
 	}{
+		{"bom retiro", "48"},
 		{"ipiranga", "56"},
 		{"iporanga", "56"},
 		{"sao caetano", "65"},

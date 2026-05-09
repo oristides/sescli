@@ -91,9 +91,6 @@ func (a App) rootCommand(ctx context.Context, stdout, stderr io.Writer, opts *op
 		opts.loadConfig()
 	}
 
-	capitalCmd := a.capitalCommand(ctx, stdout, opts)
-	capitalCmd.Hidden = true
-	cmd.AddCommand(capitalCmd)
 	centroCmd := a.centroCommand(ctx, stdout, opts)
 	centroCmd.Hidden = true
 	cmd.AddCommand(centroCmd)
@@ -129,14 +126,17 @@ Primary structure:
 Examples:
   sescli --when tomorrow --where ipiranga --what cinema --format whatsapp --limit 20
   sescli --when "from tomorrow to sunday" --where centro --what teatro
-  sescli --when today --where centro --what all --limit 10
+  sescli --when today --where "zona-sul" --what all --limit 15
 
 WHEN:
   today, tomorrow, from-now, YYYY-MM-DD, weekend, next-weekend,
   "from tomorrow to sunday", "next friday"
 
 WHERE:
-  centro, capital, venue name/slug/code like ipiranga, cinesesc, 56
+  centro     — preset named centro (zonacentral seed in config.json; edits are yours)
+  zona-norte, zona-sul, zona-leste, zona-oeste, zona-central — all mapped units in that heuristic bucket
+  metropolitana, interior, litoral — state / RM buckets
+  or a venue name/slug/id: ipiranga, cinesesc, 56
 
 WHAT:
   cultural, all, cinema, teatro, sports, or a comma-separated activity slug list
@@ -160,16 +160,6 @@ Commands:
 Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
 `
-}
-
-func (a App) capitalCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "capital",
-		Short: "Use configured central Sao Paulo defaults",
-	}
-	cmd.AddCommand(a.dateCommand(ctx, stdout, opts, "today", 0))
-	cmd.AddCommand(a.dateCommand(ctx, stdout, opts, "tomorrow", 1))
-	return cmd
 }
 
 func (a App) centroCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
@@ -221,7 +211,7 @@ func (a App) eventsCommand(ctx context.Context, stdout io.Writer, opts *options)
 func (a App) unitsCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "units",
-		Short: "List SESC units/facets from dinamico modes=unidade",
+		Short: "List SESC venues via /unidades-atividades (or dinamico fallback for other modes)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fetch := a.FetchUnits
 			if fetch == nil {
@@ -307,7 +297,7 @@ func (a App) configCommand(stdout io.Writer, opts *options) *cobra.Command {
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:   "init",
-		Short: "Create a default config file with centro units",
+		Short: "Create a default config file (presets seeded from zonacentral)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := config.Default()
 			path := opts.configPath
@@ -356,7 +346,193 @@ func (a App) configCommand(stdout io.Writer, opts *options) *cobra.Command {
 			return err
 		},
 	})
+	cmd.AddCommand(a.presetsConfigCommand(stdout, opts))
 	cmd.PersistentFlags().BoolVar(&opts.force, "force", opts.force, "overwrite existing config")
+	return cmd
+}
+
+func resolveConfigPath(optPath string) (string, error) {
+	if optPath != "" {
+		return optPath, nil
+	}
+	return config.Path()
+}
+
+func (a App) presetsConfigCommand(stdout io.Writer, opts *options) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "presets",
+		Short: "Manage unit ID lists (--where presets) stored in config",
+	}
+
+	listCmd := &cobra.Command{
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "Print effective preset keys and comma-separated unit IDs",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, err := resolveConfigPath(opts.configPath)
+			if err != nil {
+				return err
+			}
+			cfg, err := config.Load(opts.configPath)
+			if err != nil {
+				return err
+			}
+			for _, name := range config.PresetNamesForList(cfg) {
+				ids := config.EffectivePreset(cfg, name)
+				_, err := fmt.Fprintf(stdout, "%s\t%s\n", name, strings.Join(ids, ","))
+				if err != nil {
+					return err
+				}
+			}
+			_, err = fmt.Fprintf(stdout, "(config %s)\n", path)
+			return err
+		},
+	}
+
+	showCmd := &cobra.Command{
+		Use:   "show PRESET",
+		Short: "Print one preset's effective IDs",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, err := resolveConfigPath(opts.configPath)
+			if err != nil {
+				return err
+			}
+			cfg, err := config.Load(opts.configPath)
+			if err != nil {
+				return err
+			}
+			canonical, err := config.NormalizePresetName(args[0])
+			if err != nil {
+				return err
+			}
+			ids := config.EffectivePreset(cfg, canonical)
+			_, err = fmt.Fprintf(stdout, "%s\n%s\n(config %s)\n",
+				canonical,
+				strings.Join(ids, ","),
+				path,
+			)
+			return err
+		},
+	}
+
+	setCmd := &cobra.Command{
+		Use:   "set PRESET IDS...",
+		Short: "Replace preset with these unit IDs (comma or space separated)",
+		Example: "  sescli config presets set meu-lado 43,52,56\n\n  sescli config presets add centro 56",
+		Args: cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, err := resolveConfigPath(opts.configPath)
+			if err != nil {
+				return err
+			}
+			ids := config.ParseUnitIDArgs(args[1:])
+			if len(ids) == 0 {
+				return fmt.Errorf("provide at least one unit id")
+			}
+			if err := config.Update(opts.configPath, func(cfg *config.Config) error {
+				return config.SetPresetIDs(cfg, args[0], ids)
+			}); err != nil {
+				return err
+			}
+			canonical, err := config.NormalizePresetName(args[0])
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(stdout, "updated preset %q (%d ids) → %s\n", canonical, len(ids), path)
+			return err
+		},
+	}
+
+	addCmd := &cobra.Command{
+		Use:   "add PRESET IDS...",
+		Short: "Add IDs to the effective list (starts from zonacentral for centro when unset)",
+		Args:  cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, err := resolveConfigPath(opts.configPath)
+			if err != nil {
+				return err
+			}
+			extra := config.ParseUnitIDArgs(args[1:])
+			if len(extra) == 0 {
+				return fmt.Errorf("provide at least one unit id to add")
+			}
+			if err := config.Update(opts.configPath, func(cfg *config.Config) error {
+				return config.AddPresetIDs(cfg, args[0], extra)
+			}); err != nil {
+				return err
+			}
+			cfg, err := config.Load(opts.configPath)
+			if err != nil {
+				return err
+			}
+			canonical, err := config.NormalizePresetName(args[0])
+			if err != nil {
+				return err
+			}
+			n := len(config.EffectivePreset(cfg, canonical))
+			_, err = fmt.Fprintf(stdout, "updated preset %q (now %d ids) → %s\n", canonical, n, path)
+			return err
+		},
+	}
+
+	removeCmd := &cobra.Command{
+		Use:     "remove PRESET IDS...",
+		Aliases: []string{"rm"},
+		Short:   "Remove IDs from the effective list; result is stored as the override",
+		Args:    cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, err := resolveConfigPath(opts.configPath)
+			if err != nil {
+				return err
+			}
+			rem := config.ParseUnitIDArgs(args[1:])
+			if len(rem) == 0 {
+				return fmt.Errorf("provide at least one unit id to remove")
+			}
+			if err := config.Update(opts.configPath, func(cfg *config.Config) error {
+				return config.RemovePresetIDs(cfg, args[0], rem)
+			}); err != nil {
+				return err
+			}
+			cfg, err := config.Load(opts.configPath)
+			if err != nil {
+				return err
+			}
+			canonical, err := config.NormalizePresetName(args[0])
+			if err != nil {
+				return err
+			}
+			n := len(config.EffectivePreset(cfg, canonical))
+			_, err = fmt.Fprintf(stdout, "updated preset %q (now %d ids) → %s\n", canonical, n, path)
+			return err
+		},
+	}
+
+	unsetCmd := &cobra.Command{
+		Use:   "unset PRESET",
+		Short: "Drop preset from config; centro falls back to zonacentral geography again",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path, err := resolveConfigPath(opts.configPath)
+			if err != nil {
+				return err
+			}
+			canonical, err := config.NormalizePresetName(args[0])
+			if err != nil {
+				return err
+			}
+			if err := config.Update(opts.configPath, func(cfg *config.Config) error {
+				return config.UnsetPreset(cfg, canonical)
+			}); err != nil {
+				return err
+			}
+			_, err = fmt.Fprintf(stdout, "removed config entry for preset %q → %s\n", canonical, path)
+			return err
+		},
+	}
+
+	cmd.AddCommand(listCmd, showCmd, setCmd, addCmd, removeCmd, unsetCmd)
 	return cmd
 }
 
@@ -407,7 +583,7 @@ func addGlobalFlags(cmd *cobra.Command, opts *options) {
 	cmd.PersistentFlags().StringVar(&opts.profile, "profile", opts.profile, "activity profile: cultural, sports, or explicit activity slug")
 	cmd.PersistentFlags().StringVar(&opts.what, "what", opts.what, "activity/profile/audience concept: cultural, all, cinema, teatro")
 	cmd.PersistentFlags().StringVar(&opts.when, "when", opts.when, "date shortcut or date: today, tomorrow, YYYY-MM-DD")
-	cmd.PersistentFlags().StringVar(&opts.where, "where", opts.where, "venue/preset: centro, capital, ipiranga, cinesesc, 56")
+	cmd.PersistentFlags().StringVar(&opts.where, "where", opts.where, "preset key (default centro), heuristic zone (zona-sul,...), venue name/slug/id")
 	cmd.PersistentFlags().StringSliceVar(&opts.units, "units", opts.units, "comma-separated unit IDs, or repeat the flag")
 	cmd.PersistentFlags().StringSliceVar(&opts.units, "venues", opts.units, "comma-separated venue/unit IDs, or repeat the flag")
 	cmd.PersistentFlags().StringSliceVar(&opts.unitNames, "unit", opts.unitNames, "unit name/slug/code (example: ipiranga, cinesesc, 56); repeat or comma-separate")
@@ -419,7 +595,7 @@ func addGlobalFlags(cmd *cobra.Command, opts *options) {
 	cmd.PersistentFlags().IntVar(&opts.perPage, "limit", opts.perPage, "events per page (maps to ppp)")
 	cmd.PersistentFlags().IntVar(&opts.page, "page", opts.page, "page number")
 	cmd.PersistentFlags().BoolVar(&opts.fromNow, "from-now", opts.fromNow, "drop events whose start time is before now (Sao Paulo time)")
-	cmd.PersistentFlags().StringVar(&opts.preset, "preset", opts.preset, "unit preset from config: centro, capital, or custom")
+	cmd.PersistentFlags().StringVar(&opts.preset, "preset", opts.preset, "unit preset from config (default centro name) or geographic override")
 	cmd.PersistentFlags().StringVar(&opts.configPath, "config", opts.configPath, "config file path (default: OS user config dir, or SESCLI_CONFIG)")
 	cmd.PersistentFlags().BoolVar(&opts.includeRaw, "include-raw", opts.includeRaw, "include raw WordPress payload in JSON")
 	for _, name := range []string{"audience", "profile", "units", "venues", "unit", "venue", "from", "to", "from-now", "preset", "include-raw"} {
@@ -469,21 +645,22 @@ func (o *options) loadConfig() {
 
 func (o options) domainQuery(base time.Time) (querymodel.Query, error) {
 	return exec.BuildQuery(exec.QueryInput{
-		When:       o.when,
-		Where:      o.where,
-		Preset:     o.preset,
-		Profile:    o.profile,
-		What:       o.what,
-		Audience:   o.audience,
-		From:       o.from,
-		To:         o.to,
-		FromNow:    o.fromNow,
-		Units:      o.units,
-		UnitNames:  o.unitNames,
-		PerPage:    o.perPage,
-		Page:       o.page,
-		Format:     o.format,
-		IncludeRaw: o.includeRaw,
+		When:          o.when,
+		Where:         o.where,
+		Preset:        o.preset,
+		Profile:       o.profile,
+		What:          o.what,
+		Audience:      o.audience,
+		From:          o.from,
+		To:            o.to,
+		FromNow:       o.fromNow,
+		Units:         o.units,
+		UnitNames:     o.unitNames,
+		PerPage:       o.perPage,
+		Page:          o.page,
+		Format:        o.format,
+		IncludeRaw:    o.includeRaw,
+		PresetUnitIDs: o.cfg.Presets,
 	}, base)
 }
 
@@ -499,8 +676,12 @@ func (o *options) applyWhere(where string) {
 		o.preset = where
 		return
 	}
+	if presets.CanonicalUrbanMacroZone(where) != "" {
+		// zona-* | interior | litoral | metropolitana — keep CLI --where literal for where.Resolve.
+		return
+	}
 	switch strings.ToLower(strings.TrimSpace(where)) {
-	case "centro", "center", "capital":
+	case "centro", "center", "default":
 		o.preset = strings.ToLower(strings.TrimSpace(where))
 	default:
 		o.unitNames = append(o.unitNames, where)
@@ -522,18 +703,45 @@ func realEventFetcher(includeRaw bool) EventFetcher {
 	}
 }
 
+func annotateNormalizeUnitZones(units []normalize.Unit) {
+	for i := range units {
+		if units[i].ID == "" {
+			continue
+		}
+		z := presets.UrbanMacro(units[i].ID)
+		if z != "" {
+			units[i].Zone = z
+		}
+	}
+}
+
 func realUnitFetcher(includeRaw bool) UnitFetcher {
 	return func(ctx context.Context, q sescapi.DinamicoQuery) ([]normalize.Unit, string, error) {
-		rawURL, err := sescapi.DinamicoURL(q)
-		if err != nil {
-			return nil, "", err
+		switch q.Mode {
+		case sescapi.ModeUnidade, "":
+			rawURL := sescapi.UnidadesAtividadesURL()
+			var raw any
+			err := client.New(client.Options{}).GetJSON(rawURL, &raw)
+			if err != nil {
+				return nil, rawURL, err
+			}
+			units := normalize.UnitsFromRaw(raw, includeRaw)
+			annotateNormalizeUnitZones(units)
+			return units, rawURL, nil
+		default:
+			rawURL, err := sescapi.DinamicoURL(q)
+			if err != nil {
+				return nil, "", err
+			}
+			var raw any
+			err = client.New(client.Options{}).GetJSON(rawURL, &raw)
+			if err != nil {
+				return nil, rawURL, err
+			}
+			units := normalize.UnitsFromRaw(raw, includeRaw)
+			annotateNormalizeUnitZones(units)
+			return units, rawURL, nil
 		}
-		var raw any
-		err = client.New(client.Options{}).GetJSON(rawURL, &raw)
-		if err != nil {
-			return nil, rawURL, err
-		}
-		return normalize.UnitsFromRaw(raw, includeRaw), rawURL, nil
 	}
 }
 

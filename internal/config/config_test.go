@@ -17,8 +17,8 @@ func TestDefaultConfigMatchesOperatorDefaults(t *testing.T) {
 	if cfg.Audience != "adulto" || cfg.Profile != "cultural" || cfg.Format != "json" {
 		t.Fatalf("unexpected defaults: %#v", cfg)
 	}
-	if len(cfg.Presets["centro"]) == 0 || len(cfg.Presets["capital"]) <= len(cfg.Presets["centro"]) {
-		t.Fatalf("expected centro and broader capital presets: %#v", cfg.Presets)
+	if len(cfg.Presets["centro"]) == 0 {
+		t.Fatalf("expected seeded centro preset from zonacentral: %#v", cfg.Presets)
 	}
 }
 
@@ -102,14 +102,14 @@ func TestSetupInteractiveWritesDefaults(t *testing.T) {
 
 func TestLoadOldFlatConfigShape(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
-	if err := os.WriteFile(path, []byte(`{"default_preset":"capital","audience":"adulto","profile":"all","format":"pretty","limit":10,"page":2}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"default_preset":"centro","audience":"adulto","profile":"all","format":"pretty","limit":10,"page":2}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := Load(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Defaults.Where != "capital" || cfg.Defaults.What != "all" || cfg.Defaults.Format != "pretty" || cfg.Defaults.Limit != 10 || cfg.Defaults.Page != 2 {
+	if cfg.Defaults.Where != "centro" || cfg.Defaults.What != "all" || cfg.Defaults.Format != "pretty" || cfg.Defaults.Limit != 10 || cfg.Defaults.Page != 2 {
 		t.Fatalf("old config was not migrated: %#v", cfg)
 	}
 }

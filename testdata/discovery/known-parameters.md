@@ -8,6 +8,8 @@ search when the SESC programação UI changes.
 
 - `https://www.sescsp.org.br/wp-json/wp/v1/dinamico`
 - `https://www.sescsp.org.br/wp-json/wp/v1/atividades/filter`
+- `https://www.sescsp.org.br/wp-json/wp/v1/unidades-atividades` — canonical roster
+  for all venues (`group_id`, `group_slug`, `description` = capital/interior/litoral).
 
 ## Required Headers
 
@@ -38,12 +40,16 @@ Known `modes`:
 Current production shape observed during live tests:
 
 - Top-level object with keys like `categorias`, `unidades`.
-- `unidades` may be grouped by region (`capital`, etc.) and contains items with
-  fields like `groupID`, `groupName`, `groupLink`.
-- Important: the API's `capital` group is not the same as the operator's
-  preferred central venue set. `sescli` defaults to a smaller `centro` preset:
-  `2,43,51,52,53,60,61,66,761`. Use the broader `capital` preset only when those
-  farther units are desired.
+- `unidades` may be grouped by region in the payload (often labeled `capital` /
+  interior / litoral in the site's own grouping — not the same as SESCLI presets).
+  Items include fields such as `groupID`, `groupName`, `groupLink`.
+- `sescli` does **not** mirror that API grouping as a preset. Default footprint is
+  preset **`centro`** in `config.json`, **seeded at install** from SESCLI's
+  **zonacentral** heuristic (same geography as **`--where zona-central`** unless
+  you edit **`presets.centro`**). Use **`metropolitana`**, **`zona-*`**, etc. via
+  `--where` for larger regional filters.
+- Editorial **`zone`** labels on roster units mirror those geographic buckets —
+  orthogonal to **`presets`**, which remain user-maintained IDs.
 - `sescli` keeps a static reverse-search unit index so users can write
   `--unit ipiranga` or run `units search ipiranga`; this resolves names/slugs
   to the numeric `local` IDs required by `atividades/filter`.

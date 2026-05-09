@@ -28,6 +28,9 @@ type QueryInput struct {
 	Page       int
 	Format     string
 	IncludeRaw bool
+	// PresetUnitIDs is optional config.json "presets"; keys that match the
+	// where expression override zonacentral for preset centro before resolving.
+	PresetUnitIDs map[string][]string
 }
 
 func splitCSV(values []string) []string {
@@ -58,7 +61,11 @@ func BuildQuery(in QueryInput, base time.Time) (query.Query, error) {
 	if whereExpr == "" {
 		whereExpr = in.Preset
 	}
-	whereFilter := where.Filter{Expression: whereExpr, IDs: splitCSV(in.Units)}
+	whereFilter := where.Filter{
+		Expression:    whereExpr,
+		IDs:           splitCSV(in.Units),
+		ConfigPresets: in.PresetUnitIDs,
+	}
 	if len(in.UnitNames) > 0 {
 		whereFilter.Expression = strings.Join(in.UnitNames, ",")
 		whereFilter.IDs = nil

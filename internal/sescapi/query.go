@@ -86,3 +86,9 @@ func DinamicoURL(q DinamicoQuery) (string, error) {
 	values.Set("modes", q.Mode)
 	return BaseURL + "/dinamico?" + values.Encode(), nil
 }
+
+// UnidadesAtividadesURL is the canonical WordPress roster for venues (opening
+// hours); use this instead of dinamico?modes=unidade when listing venues.
+func UnidadesAtividadesURL() string {
+	return BaseURL + "/unidades-atividades"
+}

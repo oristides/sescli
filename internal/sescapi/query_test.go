@@ -10,8 +10,13 @@ import (
 
 func TestEventsURLUsesTypedQueryAndDefaults(t *testing.T) {
 	defaults := presets.Defaults()
+	units := presets.ClonePresetMap(presets.DefaultInstallPresets())["centro"]
+	if len(units) < 3 {
+		t.Fatalf("zonacentral seed too small: %#v", units)
+	}
+
 	u, err := EventsURL(EventsQuery{
-		Units:         presets.CapitalUnitIDs(),
+		Units:         units,
 		Audience:      defaults.Audience,
 		ActivityTypes: defaults.ActivityTypes,
 		From:          "2026-05-08",
@@ -34,14 +39,23 @@ func TestEventsURLUsesTypedQueryAndDefaults(t *testing.T) {
 	if values.Get("publico") != "adulto" {
 		t.Fatalf("expected adulto, got %q", values.Get("publico"))
 	}
-	if !strings.Contains(values.Get("local"), "761,2") {
-		t.Fatalf("expected capital unit ids, got %q", values.Get("local"))
+
+	sub := strings.Join(units[:2], ",")
+	if !strings.Contains(values.Get("local"), sub) && !strings.Contains(values.Get("local"), units[0]) {
+		t.Fatalf("expected unit ids prefix in query, got %q", values.Get("local"))
 	}
 	if values.Get("data_inicial") != "2026-05-08" || values.Get("data_final") != "2026-05-08" {
 		t.Fatalf("expected date window, got %q to %q", values.Get("data_inicial"), values.Get("data_final"))
 	}
 	if values.Get("dinamico") != "true" || values.Get("tipo") != "atividade" {
 		t.Fatalf("missing required defaults: %s", parsed.RawQuery)
+	}
+}
+
+func TestUnidadesAtividadesURLUsesStaticPath(t *testing.T) {
+	u := UnidadesAtividadesURL()
+	if u != "https://www.sescsp.org.br/wp-json/wp/v1/unidades-atividades" {
+		t.Fatalf("unexpected roster url %q", u)
 	}
 }
 

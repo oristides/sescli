@@ -37,8 +37,12 @@ func TestBuildQueryVariants(t *testing.T) {
 		if got.Audience != "adulto" || got.PerPage != 40 || got.Page != 2 {
 			t.Fatalf("metadata: %#v", got)
 		}
-		if !slices.Equal(got.Units, presets.CentroUnitIDs()) {
-			t.Fatalf("centro units mismatch")
+		central, ok := presets.UnitIDsWithUrbanMacroZone(presets.ZoneCentral)
+		if !ok {
+			t.Fatal("zonacentral empty")
+		}
+		if !slices.Equal(got.Units, central) {
+			t.Fatalf("centro units mismatch: %#v", got.Units)
 		}
 		exp := what.Resolve(what.Filter{Expression: "cultural", Audience: "adulto"})
 		if !slices.Equal(got.ActivityTypes, exp.ActivityTypes) {
@@ -47,14 +51,18 @@ func TestBuildQueryVariants(t *testing.T) {
 	})
 
 	t.Run("explicit_from_to_dates", func(t *testing.T) {
+		rm, ok := presets.UnitIDsWithUrbanMacroZone(presets.ZoneMetropolitana)
+		if !ok || len(rm) < 2 {
+			t.Fatalf("metropolitan zone ids: ok=%v got %v", ok, rm)
+		}
 		in := QueryInput{
-			From:      "2026-06-01",
-			To:        "2026-06-15",
-			Where:     "capital",
-			What:      "all",
-			Audience:  "adulto",
-			PerPage:   0,
-			Page:      0,
+			From:     "2026-06-01",
+			To:       "2026-06-15",
+			Where:    "metropolitana",
+			What:     "all",
+			Audience: "adulto",
+			PerPage:  0,
+			Page:     0,
 		}
 		q, err := BuildQuery(in, base)
 		if err != nil {
@@ -62,7 +70,7 @@ func TestBuildQueryVariants(t *testing.T) {
 		}
 		got := q.EventsQuery()
 		exp := sescapi.EventsQuery{
-			Units:         presets.CapitalUnitIDs(),
+			Units:         rm,
 			Audience:      "adulto",
 			ActivityTypes: nil,
 			From:          "2026-06-01",
@@ -77,7 +85,7 @@ func TestBuildQueryVariants(t *testing.T) {
 			t.Fatalf("expected cleared profile filter, got %+v", got.ActivityTypes)
 		}
 		if !slices.Equal(got.Units, exp.Units) {
-			t.Fatal("capital unit list differs")
+			t.Fatal("metropolitana unit list differs")
 		}
 	})
 

@@ -29,11 +29,13 @@ type Event struct {
 
 // Unit is the stable shape for SESC physical spaces.
 type Unit struct {
-	ID   string         `json:"id,omitempty"`
-	Name string         `json:"name,omitempty"`
-	Slug string         `json:"slug,omitempty"`
-	URL  string         `json:"url,omitempty"`
-	Raw  map[string]any `json:"raw,omitempty"`
+	ID         string         `json:"id,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Slug       string         `json:"slug,omitempty"`
+	URL        string         `json:"url,omitempty"`
+	APISegment string         `json:"api_segment,omitempty"`
+	Zone       string         `json:"zone,omitempty"`
+	Raw        map[string]any `json:"raw,omitempty"`
 }
 
 var tags = regexp.MustCompile(`<[^>]+>`)
@@ -107,10 +109,11 @@ func eventItems(raw any) []map[string]any {
 
 func UnitFromRaw(raw map[string]any, includeRaw bool) Unit {
 	unit := Unit{
-		ID:   firstString(raw, "term_id", "groupID", "ID", "id"),
-		Name: firstString(raw, "name", "groupName", "post_title", "title"),
-		Slug: firstString(raw, "slug", "groupLink", "post_name"),
-		URL:  firstString(raw, "link", "permalink", "url"),
+		ID:         firstString(raw, "group_id", "term_id", "groupID", "ID", "id"),
+		Name:       firstString(raw, "name", "groupName", "post_title", "title"),
+		Slug:       firstString(raw, "group_slug", "slug", "groupLink", "post_name"),
+		URL:        firstString(raw, "link", "permalink", "url"),
+		APISegment: firstString(raw, "description", "groupType"),
 	}
 	if includeRaw {
 		unit.Raw = raw

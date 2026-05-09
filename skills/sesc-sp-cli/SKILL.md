@@ -1,6 +1,6 @@
 ---
 name: sesc-sp-cli
-description: Use when querying SESC Sao Paulo programming/events from agents, scripts, WhatsApp integrations, or terminals, especially when filtering by capital units, adult audience, dates, activity profile, units, or needing compact JSON event output.
+description: Use when querying SESC Sao Paulo programming/events from agents, scripts, WhatsApp integrations, or terminals — geographic zones (zona-*, metropolitana), named presets seeded in config at install (default `centro` from zonacentral), adult audience defaults, WhatsApp-ready output, compact JSON events.
 ---
 
 # SESC SP CLI
@@ -8,8 +8,8 @@ description: Use when querying SESC Sao Paulo programming/events from agents, sc
 ## Overview
 
 `sescli` is a self-contained Go CLI for SESC Sao Paulo programação data. Its
-default persona is adult audience, **centro** units, and cultural interests like
-theater, cinema, and workshops.
+default persona is adult audience, preset **`centro`** (zonacentral unit IDs seeded
+into `config.json`), and cultural interests like theater, cinema, and workshops.
 
 Default output is compact JSON for automation. Use `--format whatsapp` for terse
 plain-text lines that can be pasted into chat.
@@ -24,16 +24,21 @@ sescli config path
 sescli info venues search ipiranga
 ```
 
+## `--where`: geographic zones versus named presets
+
+- **`--where zona-*`**, **`metropolitana`**, **`interior`**, **`litoral`** — expand to **all** unit IDs in that heuristic geography bucket (`zona-central` is the central-city macro-area).
+- **`--where centro`** — the **preset** named **`centro`**. On a fresh **`config init`**, **`presets.centro`** is **seeded from the same zonacentral ID list**, but you curate it in config (or **`sescli config presets …`**). If you **`unset`** the preset in config or leave it empty, resolution falls back to **live zonacentral geography** again.
+- A **venue** token (`ipiranga`, slug, numeric id) resolves to exactly one unit.
+
+Aliases such as **`zonasul`** or **`zona sul`** normalize to **`zona-sul`**.
+
 Agents can attach the **`sesmcp`** stdio server (same query stack): see the repository `README.md` MCP section.
 
 ## Defaults
 
 - Audience defaults to `adulto`.
-- Venues default to the built-in/configured `centro` preset:
-  `2,43,51,52,53,60,61,66,761`.
-- The SESC API's own `capital` group is broader and includes venues such as
-  Interlagos, Sao Caetano, Guarulhos, etc.; do not use that group when the user
-  means central venues.
+- Venue footprint defaults to preset **`centro`**: seeded at **`config init`** / first run as **zonacentral** IDs; edit **`presets.centro`** to curate — no separate “capital preset” exists in SESCLI anymore.
+- Broader São Paulo‑metro coverage: **`--where metropolitana`** (or other zones).
 - Activity profile defaults to `cultural`: theater, cinema, and workshops.
 - Use `--profile all` to remove the activity filter when cultural defaults
   return too few events.
@@ -56,7 +61,6 @@ sescli --config /tmp/sescli.json config init
 sescli events --from 2026-05-08 --to 2026-05-08 --limit 20
 sescli events --venue ipiranga --from 2026-05-08 --to 2026-05-10
 sescli events --venues 2,43,53 --profile cultural
-sescli events --preset capital --format whatsapp
 sescli events --preset centro --profile all --page 2 --limit 10
 sescli info venues search ipiranga
 sescli info venues --format pretty
@@ -111,6 +115,34 @@ sescli config init --force
 The config is JSON and contains grouped `defaults` (`where`, `what`, `audience`,
 `format`, `limit`, `page`) plus named `presets`. Old flat configs still load.
 Use `SESCLI_CONFIG` or `--config PATH` to select a different file.
+
+### Curating `centro` / custom presets
+
+- In `config.json`, the **`presets`** map holds name → list of numeric unit IDs.
+- If **`presets.centro`** is present and **non-empty**, it **replaces** the fallback used for **`--where centro`** (otherwise SESCLI resolves **`centro`** from **zonacentral** geography—the same IDs **`config init`** seeds into the file).
+- Add your own keys (e.g. **`"perto": ["43","52","56"]`**) and call **`sescli --where perto`**.
+- **`defaults.where`** can be set to one of those names so you do not repeat the flag.
+- Use **`sescli info venues search …`** against the live roster to double-check IDs.
+- **`sescli config init --force`** overwrites the file — keep a backup.
+
+**From the CLI (no manual JSON edits):**
+
+```bash
+sescli config presets list              # effective IDs per preset name
+sescli config presets show centro       # one preset, newline then CSV ids
+
+# New custom list → then use `--where trabalho`.
+sescli config presets set trabalho 43,52,56
+
+# Tweaking centro: merge into effective list (config overrides → else zonacentral).
+sescli config presets add centro 56
+sescli config presets remove centro 761
+
+# Drop your centro override → back to zonacentral geography.
+sescli config presets unset centro
+```
+
+Preset names **`center`** and **`default`** are normalized to **`centro`**. Paths follow `sescli config path` unless you pass **`--config`**.
 
 ## Venue Lookup
 

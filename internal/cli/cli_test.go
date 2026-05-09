@@ -14,7 +14,7 @@ import (
 	"sescli/internal/sescapi"
 )
 
-func TestCapitalTodayDefaultsToCompactJSON(t *testing.T) {
+func TestCentroTodayDefaultsToCompactJSON(t *testing.T) {
 	app := App{FetchEvents: func(ctx context.Context, q sescapi.EventsQuery) ([]normalize.Event, string, error) {
 		if q.Audience != "adulto" {
 			t.Fatalf("expected adulto audience, got %q", q.Audience)
@@ -39,7 +39,7 @@ func TestCapitalTodayDefaultsToCompactJSON(t *testing.T) {
 	}}
 	var stdout, stderr bytes.Buffer
 
-	err := app.Execute(context.Background(), []string{"capital", "today"}, &stdout, &stderr)
+	err := app.Execute(context.Background(), []string{"centro", "today"}, &stdout, &stderr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,13 +139,13 @@ func TestEventsUnknownUnitNameReturnsHelpfulError(t *testing.T) {
 	}
 }
 
-func TestCapitalTodayWhatsAppFormat(t *testing.T) {
+func TestCentroTodayWhatsAppFormat(t *testing.T) {
 	app := App{FetchEvents: func(ctx context.Context, q sescapi.EventsQuery) ([]normalize.Event, string, error) {
 		return []normalize.Event{{Title: "Teatro", URL: "https://sescsp.org.br/t", Venue: "Sesc 24 de Maio", PriceLabel: "R$ 20"}}, "", nil
 	}}
 	var stdout, stderr bytes.Buffer
 
-	err := app.Execute(context.Background(), []string{"capital", "today", "--format", "whatsapp"}, &stdout, &stderr)
+	err := app.Execute(context.Background(), []string{"centro", "today", "--format", "whatsapp"}, &stdout, &stderr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func TestCapitalTodayWhatsAppFormat(t *testing.T) {
 	}
 }
 
-func TestCapitalTodayAcceptsLimitFlag(t *testing.T) {
+func TestCentroTodayAcceptsLimitFlag(t *testing.T) {
 	app := App{FetchEvents: func(ctx context.Context, q sescapi.EventsQuery) ([]normalize.Event, string, error) {
 		if q.PerPage != 10 {
 			t.Fatalf("expected shortcut --limit to set ppp=10, got %d", q.PerPage)
@@ -167,7 +167,7 @@ func TestCapitalTodayAcceptsLimitFlag(t *testing.T) {
 	}}
 	var stdout, stderr bytes.Buffer
 
-	err := app.Execute(context.Background(), []string{"capital", "today", "--format", "whatsapp", "--limit", "10"}, &stdout, &stderr)
+	err := app.Execute(context.Background(), []string{"centro", "today", "--format", "whatsapp", "--limit", "10"}, &stdout, &stderr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -322,7 +322,15 @@ func TestRootHelpShowsCanonicalQueryModelOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	help := stderr.String()
-	for _, hidden := range []string{"\n  capital    ", "\n  centro     ", "\n  today      ", "\n  tomorrow   ", "\n  events     ", "\n  facets     ", "\n  venues     ", "\n  completion "} {
+	for _, hidden := range []string{
+		"centro     Use the central-unit default preset",
+		"\n  today      ",
+		"\n  tomorrow   ",
+		"\n  events     ",
+		"\n  facets     ",
+		"\n  venues     ",
+		"\n  completion ",
+	} {
 		if strings.Contains(help, hidden) {
 			t.Fatalf("compatibility command %q should be hidden from root help:\n%s", hidden, help)
 		}
@@ -366,7 +374,7 @@ func TestProfileAllRemovesActivityFilter(t *testing.T) {
 	}}
 	var stdout, stderr bytes.Buffer
 
-	err := app.Execute(context.Background(), []string{"capital", "today", "--profile", "all"}, &stdout, &stderr)
+	err := app.Execute(context.Background(), []string{"centro", "today", "--profile", "all"}, &stdout, &stderr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +394,7 @@ func TestFromNowFiltersPastEvents(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 
-	err := app.Execute(context.Background(), []string{"capital", "today", "--from-now"}, &stdout, &stderr)
+	err := app.Execute(context.Background(), []string{"centro", "today", "--from-now"}, &stdout, &stderr)
 	if err != nil {
 		t.Fatal(err)
 	}

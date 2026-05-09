@@ -3,6 +3,7 @@
 package sescapi
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -11,25 +12,34 @@ import (
 	"sescli/internal/presets"
 )
 
-func TestIntegrationDinamicoUnitsReturnsRealData(t *testing.T) {
-	u, err := DinamicoURL(DinamicoQuery{Mode: ModeUnidade, Audience: "adulto"})
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func TestIntegrationUnidadesAtividadesListsVenues(t *testing.T) {
+	u := UnidadesAtividadesURL()
 	var raw any
 	if err := client.New(client.Options{Timeout: 12 * time.Second, Retries: 2}).GetJSON(u, &raw); err != nil {
 		t.Fatal(err)
 	}
 	units := normalize.UnitsFromRaw(raw, false)
 	if len(units) == 0 {
-		t.Fatalf("expected real units from SESC SP API")
+		t.Fatalf("expected real venues from %s", u)
+	}
+	foundBomRetiro := false
+	for _, un := range units {
+		if un.ID == "48" && strings.Contains(strings.ToLower(un.Name), "bom retiro") {
+			foundBomRetiro = true
+		}
+	}
+	if !foundBomRetiro {
+		t.Fatalf("expected Bom Retiro (48) on venue roster")
 	}
 }
 
-func TestIntegrationCapitalEventsEndpointIsReachable(t *testing.T) {
+func TestIntegrationMetroAreaEventsEndpointIsReachable(t *testing.T) {
+	rm, ok := presets.UnitIDsWithUrbanMacroZone(presets.ZoneMetropolitana)
+	if !ok || len(rm) == 0 {
+		t.Fatal("need metropolitan IDs for probe")
+	}
 	u, err := EventsURL(EventsQuery{
-		Units:         presets.CapitalUnitIDs(),
+		Units:         rm,
 		Audience:      "adulto",
 		ActivityTypes: presets.Defaults().ActivityTypes,
 		PerPage:       3,
@@ -50,7 +60,7 @@ func TestIntegrationCapitalEventsEndpointIsReachable(t *testing.T) {
 
 func TestIntegrationCentroEventsDecodeAndNormalizeWithoutPanic(t *testing.T) {
 	u, err := EventsURL(EventsQuery{
-		Units:         presets.CentroUnitIDs(),
+		Units:         presets.ClonePresetMap(presets.DefaultInstallPresets())["centro"],
 		Audience:      "adulto",
 		ActivityTypes: nil,
 		From:          time.Now().Format(time.DateOnly),

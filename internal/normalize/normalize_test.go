@@ -119,3 +119,26 @@ func TestUnitsFromRawAcceptsGroupedLiveEnvelope(t *testing.T) {
 		t.Fatalf("unexpected unit: %#v", units[0])
 	}
 }
+
+func TestUnitsFromRawUnidadesAtividadesRowShape(t *testing.T) {
+	un := UnitFromRaw(map[string]any{
+		"name":        "Bom Retiro",
+		"group_id":    "48",
+		"group_slug":  "bom-retiro",
+		"description": "capital",
+	}, false)
+
+	if un.ID != "48" || un.Name != "Bom Retiro" || un.Slug != "bom-retiro" {
+		t.Fatalf("unexpected normalization: %#v", un)
+	}
+	if un.APISegment != "capital" {
+		t.Fatalf("expected api_segment capital, got %q", un.APISegment)
+	}
+	list := UnitsFromRaw([]any{
+		map[string]any{"name": "Bom Retiro", "group_id": "48"},
+		map[string]any{"oops": "ignored"},
+	}, false)
+	if len(list) != 1 {
+		t.Fatalf("expected to skip malformed row, got %d", len(list))
+	}
+}

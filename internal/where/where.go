@@ -8,8 +8,9 @@ import (
 )
 
 type Filter struct {
-	Expression string
-	IDs        []string
+	Expression    string
+	IDs           []string
+	ConfigPresets map[string][]string `json:"-"` // optional: ~/.config/sescli preset lists
 }
 
 type Resolved struct {
@@ -21,17 +22,45 @@ func Resolve(filter Filter) (Resolved, error) {
 		return Resolved{IDs: splitCSV(filter.IDs)}, nil
 	}
 	expr := strings.TrimSpace(filter.Expression)
-	if expr == "" || strings.EqualFold(expr, "centro") {
-		return Resolved{IDs: presets.CentroUnitIDs()}, nil
+	presetLookup := expr
+	if presetLookup == "" {
+		presetLookup = "centro"
 	}
-	if strings.EqualFold(expr, "capital") {
-		return Resolved{IDs: presets.CapitalUnitIDs()}, nil
+	if ids, ok := configPreset(filter.ConfigPresets, presetLookup); ok {
+		return Resolved{IDs: ids}, nil
+	}
+	if expr == "" || strings.EqualFold(expr, "centro") || strings.EqualFold(expr, "center") || strings.EqualFold(expr, "default") {
+		ids, ok := presets.UnitIDsWithUrbanMacroZone(presets.ZoneCentral)
+		if !ok || len(ids) == 0 {
+			return Resolved{}, fmt.Errorf("where: zonacentral geography table has no units")
+		}
+		return Resolved{IDs: ids}, nil
+	}
+	if ids, ok := presets.UnitIDsWithUrbanMacroZone(expr); ok {
+		return Resolved{IDs: ids}, nil
 	}
 	ids, err := presets.ResolveUnitIDs([]string{expr})
 	if err != nil {
 		return Resolved{}, fmt.Errorf("resolve where: %w", err)
 	}
 	return Resolved{IDs: ids}, nil
+}
+
+func configPreset(m map[string][]string, name string) ([]string, bool) {
+	if m == nil || name == "" {
+		return nil, false
+	}
+	name = strings.ToLower(strings.TrimSpace(name))
+	for k, ids := range m {
+		if strings.ToLower(strings.TrimSpace(k)) != name {
+			continue
+		}
+		if len(ids) == 0 {
+			return nil, false
+		}
+		return presets.Dedupe(ids), true
+	}
+	return nil, false
 }
 
 func splitCSV(values []string) []string {
