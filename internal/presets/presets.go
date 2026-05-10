@@ -69,10 +69,10 @@ func UnitIDsForPreset(preset string) []string {
 
 func Defaults() DefaultSet {
 	return DefaultSet{
-		Audience:      "adulto",
-		Profile:       "cultural",
-		Preset:        "capital",
-		UnitIDs:       DefaultCapitalUnitIDs(),
+		Audience: "adulto",
+		Profile:  "cultural",
+		Preset:   "capital",
+		UnitIDs:  DefaultCapitalUnitIDs(),
 		// Match atividades/filter taxonomy: theater is under shows-espetaculos-e-performances, not atividade=teatro.
 		ActivityTypes: []string{"shows-espetaculos-e-performances", "cinema", "cursos-e-oficinas"},
 		PerPage:       40,

@@ -5,6 +5,11 @@
 # Usage:
 #   ./scripts/release.sh v0.3.1
 #
+# Or, from repo root (runs tests, shows recent tags, auto next semver tag):
+#   make release
+#   make release BUMP=minor
+#   make release TAG=v0.4.0
+#
 # Requires: git, remote branch up to date, tag must not exist.
 
 set -eu

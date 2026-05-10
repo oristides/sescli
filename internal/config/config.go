@@ -53,7 +53,7 @@ func Default() Config {
 		Format:        "json",
 		Limit:         defaults.PerPage,
 		Page:          defaults.Page,
-		Presets: presets.ClonePresetMap(presets.DefaultInstallPresets()),
+		Presets:       presets.ClonePresetMap(presets.DefaultInstallPresets()),
 	}
 }
 
