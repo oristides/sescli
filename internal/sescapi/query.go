@@ -68,6 +68,18 @@ func EventsURL(q EventsQuery) (string, error) {
 	return BaseURL + "/atividades/filter?" + values.Encode(), nil
 }
 
+// AtividadesSearchURL builds GET /atividades/search — same `atividade[]` row
+// shape as filter (not a long-form detail document).
+func AtividadesSearchURL(search string, perPage int) string {
+	values := url.Values{}
+	values.Set("s", search)
+	if perPage <= 0 {
+		perPage = 40
+	}
+	values.Set("ppp", strconv.Itoa(perPage))
+	return BaseURL + "/atividades/search?" + values.Encode()
+}
+
 func DinamicoURL(q DinamicoQuery) (string, error) {
 	if q.Audience == "" {
 		q.Audience = "adulto"

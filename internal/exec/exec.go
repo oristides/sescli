@@ -13,21 +13,22 @@ import (
 // QueryInput matches the semantic flags used by the CLI and MCP tools before
 // resolution into canonical API bounds.
 type QueryInput struct {
-	When       string
-	Where      string
-	Preset     string
-	Profile    string
-	What       string
-	Audience   string
-	From       string
-	To         string
-	FromNow    bool
-	Units      []string
-	UnitNames  []string
-	PerPage    int
-	Page       int
-	Format     string
-	IncludeRaw bool
+	When         string
+	Where        string
+	Preset       string
+	Profile      string
+	What         string
+	Audience     string
+	From         string
+	To           string
+	FromNow      bool
+	Units        []string
+	UnitNames    []string
+	PerPage      int
+	Page         int
+	Format       string
+	IncludeRaw   bool
+	SummaryChars int
 	// PresetUnitIDs is optional config.json "presets"; keys that match the
 	// where expression override zonacentral for preset centro before resolving.
 	PresetUnitIDs map[string][]string
@@ -57,6 +58,15 @@ func BuildQuery(in QueryInput, base time.Time) (query.Query, error) {
 	if strings.TrimSpace(in.When) == "" && strings.TrimSpace(in.From) == "" && strings.TrimSpace(in.To) == "" {
 		in.When = "today"
 	}
+	whatExpr := strings.TrimSpace(in.What)
+	if whatExpr == "" {
+		whatExpr = strings.TrimSpace(in.Profile)
+	}
+	if err := what.Validate(whatExpr); err != nil {
+		return query.Query{}, err
+	}
+	resolvedWhat := what.Resolve(what.Filter{Expression: whatExpr, Audience: in.Audience})
+
 	whereExpr := in.Where
 	if whereExpr == "" {
 		whereExpr = in.Preset
@@ -74,12 +84,6 @@ func BuildQuery(in QueryInput, base time.Time) (query.Query, error) {
 	if err != nil {
 		return query.Query{}, err
 	}
-
-	whatExpr := in.What
-	if whatExpr == "" {
-		whatExpr = in.Profile
-	}
-	resolvedWhat := what.Resolve(what.Filter{Expression: whatExpr, Audience: in.Audience})
 
 	whenFilter := when.Filter{From: in.From, To: in.To, FromNow: in.FromNow}
 	forcedFromNow := in.FromNow
@@ -103,6 +107,10 @@ func BuildQuery(in QueryInput, base time.Time) (query.Query, error) {
 		Where: resolvedWhere,
 		What:  resolvedWhat,
 		Page:  query.PageOptions{Limit: in.PerPage, Page: in.Page},
-		Out:   query.OutputOptions{Format: in.Format, IncludeRaw: in.IncludeRaw},
+		Out: query.OutputOptions{
+			Format:       in.Format,
+			IncludeRaw:   in.IncludeRaw,
+			SummaryChars: in.SummaryChars,
+		},
 	}, nil
 }

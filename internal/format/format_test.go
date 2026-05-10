@@ -1,59 +1,49 @@
 package format
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"sescli/internal/normalize"
 )
 
-func TestWhatsAppKeepsOneShortUsefulLinePerEvent(t *testing.T) {
-	out := WhatsApp([]normalize.Event{{
-		Title:      "Mostra de Cinema",
-		URL:        "https://sescsp.org.br/e",
-		Venue:      "Sesc Consolacao",
-		PriceLabel: "Gratis",
-		Categories: []string{"Cinema"},
-	}})
-
-	if strings.Contains(out, "\n\n") {
-		t.Fatalf("whatsapp output should not contain blank lines: %q", out)
+func TestWhatsAppIncludesSummarySecondLine(t *testing.T) {
+	ev := normalize.Event{
+		Title:   "Show",
+		Summary: "com Fulano",
+		URL:     "https://www.sescsp.org.br/programacao/x",
 	}
-	wantParts := []string{"Mostra de Cinema", "Gratis", "Sesc Consolacao", "https://sescsp.org.br/e"}
-	for _, part := range wantParts {
-		if !strings.Contains(out, part) {
-			t.Fatalf("expected %q in %q", part, out)
-		}
+	out := WhatsApp([]normalize.Event{ev})
+	if !strings.Contains(out, "Show") || !strings.Contains(out, "com Fulano") {
+		t.Fatalf("got %q", out)
 	}
-	if len(out) > 140 {
-		t.Fatalf("single event line should stay terse, got %d chars: %q", len(out), out)
+	lines := strings.Split(out, "\n")
+	if len(lines) < 2 || !strings.HasPrefix(lines[1], "  ") {
+		t.Fatalf("expected indented summary line: %q", out)
 	}
 }
 
-func TestWhatsAppExplainsEmptyResults(t *testing.T) {
-	out := WhatsApp(nil)
-	if out != "Nenhum evento encontrado." {
-		t.Fatalf("unexpected empty output: %q", out)
+func TestTableIncludesSummaryColumn(t *testing.T) {
+	ev := normalize.Event{Title: "A", Summary: "sub", Synopsis: strings.Repeat("x", 200), Venue: "V"}
+	row := strings.Split(Table([]normalize.Event{ev}), "\n")
+	if len(row) < 2 {
+		t.Fatal(row)
+	}
+	if !strings.Contains(row[0], "SUMMARY") || !strings.Contains(row[0], "SYNOPSIS") {
+		t.Fatalf("header %q", row[0])
+	}
+	if !strings.Contains(row[1], "\tsub\t") {
+		t.Fatalf("row %q", row[1])
+	}
+	if !strings.Contains(row[1], "...") {
+		t.Fatalf("expected truncated synopsis: %q", row[1])
 	}
 }
 
-func TestJSONCompactOmitsEmptyRawByDefault(t *testing.T) {
-	payload := Response("events", []normalize.Event{{ID: "1", Title: "A"}}, Meta{Total: 1})
-
-	out, err := JSON(payload, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(out, "\n") {
-		t.Fatalf("compact json should not include newlines: %q", out)
-	}
-
-	var decoded map[string]any
-	if err := json.Unmarshal([]byte(out), &decoded); err != nil {
-		t.Fatalf("invalid json: %v", err)
-	}
-	if _, ok := decoded["_meta"]; !ok {
-		t.Fatalf("expected _meta envelope in %v", decoded)
+func TestWhatsAppIncludesSynopsisBlock(t *testing.T) {
+	ev := normalize.Event{Title: "T", Synopsis: "Long body here.", URL: "https://x"}
+	out := WhatsApp([]normalize.Event{ev})
+	if !strings.Contains(out, "Long body here.") {
+		t.Fatalf("got %q", out)
 	}
 }

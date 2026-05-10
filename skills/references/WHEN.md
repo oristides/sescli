@@ -35,6 +35,8 @@ Examples:
 
 - **`next friday`**, **`next thursday`** — handled by **`naturaldate`** with **future** direction. If the parsed time is **exactly** the anchor instant, `sescli` returns an error (`invalid when`) so “same moment” parses do not silently pass.
 
+Phrases like **`next saturday`** also resolve to a **single calendar day** (same `data_inicial` and `data_final`). That can legitimately return **fewer rows** than a multi-day query. For Saturday–Sunday use **`weekend`** / **`next-weekend`**, or **`--from` / `--to`** with an explicit range.
+
 Anchoring uses the CLI **`now`** (normally the real clock).
 
 ## Interaction with `--from` / `--to`

@@ -2,6 +2,7 @@ package exec
 
 import (
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,12 +20,12 @@ func TestBuildQueryVariants(t *testing.T) {
 
 	t.Run("when_range_dot_form", func(t *testing.T) {
 		in := QueryInput{
-			When:      "today..tomorrow",
-			Preset:    "centro",
-			Profile:   "cultural",
-			Audience:  "adulto",
-			PerPage:   40,
-			Page:      2,
+			When:     "today..tomorrow",
+			Preset:   "centro",
+			Profile:  "cultural",
+			Audience: "adulto",
+			PerPage:  40,
+			Page:     2,
 		}
 		q, err := BuildQuery(in, base)
 		if err != nil {
@@ -116,6 +117,17 @@ func TestBuildQueryVariants(t *testing.T) {
 		}
 	})
 
+	t.Run("invalid_what_rejected", func(t *testing.T) {
+		_, err := BuildQuery(QueryInput{
+			When:  "today",
+			Where: "centro",
+			What:  "espetaculo",
+		}, base)
+		if err == nil || !strings.Contains(err.Error(), "invalid --what") || !strings.Contains(err.Error(), "ALLOWED_PROFILE_VALUES") {
+			t.Fatalf("expected invalid --what error with guidance, got %v", err)
+		}
+	})
+
 	t.Run("explicit_unit_slug", func(t *testing.T) {
 		in := QueryInput{
 			When:      "tomorrow",
@@ -141,6 +153,21 @@ func TestBuildQueryVariants(t *testing.T) {
 		}
 		if ev.PerPage != 5 || ev.Page != 3 {
 			t.Fatalf("pagination: %+v", ev)
+		}
+	})
+
+	t.Run("summary_chars_in_output_options", func(t *testing.T) {
+		q, err := BuildQuery(QueryInput{
+			When:         "today",
+			Where:        "centro",
+			What:         "all",
+			SummaryChars: 0,
+		}, base)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if q.Out.SummaryChars != 0 {
+			t.Fatalf("got %d", q.Out.SummaryChars)
 		}
 	})
 }

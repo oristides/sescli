@@ -21,6 +21,14 @@ sescli --when today --where centro --what all --limit 10
 
 # Natural date + zona-sul preset
 sescli --when 'next thursday' --where zona-sul --what all --limit 10
+
+# Theater next Wednesday — omitting --where uses default municipal union (capital)
+sescli --when "next wednesday" --what teatro --format whatsapp --limit 50
+
+# Explicit centro only (zona-central preset / geography)
+sescli --when "next wednesday" --where centro --what teatro --format whatsapp --limit 50
+
+
 ```
 
 ## Reference documentation
@@ -29,6 +37,7 @@ In-repo specs (resolution order, presets, timezone, edge cases):
 
 - **`--when`:** [WHEN.md](references/WHEN.md)
 - **`--where`:** [WHERE.md](references/WHERE.md)
+- **`--what`:** [WHAT.md](references/WHAT.md) — profiles + allowed API slugs (`sescli info what`)
 - **Config & presets:** [config.md](references/config.md)
 - **MCP server (`sesmcp`):** [MCP.md](references/MCP.md)
 
@@ -38,17 +47,22 @@ In-repo specs (resolution order, presets, timezone, edge cases):
 |---|---|
 | `--when` | `today`, `tomorrow`, `weekend`, `YYYY-MM-DD`, natural phrases — [full guide](references/WHEN.md) |
 | `--where` | Venue name (`ipiranga`), zone (`zona-sul`), preset (`centro`) — [full guide](references/WHERE.md) |
-| `--what` | Activity type: `cinema`, `teatro`, `oficina`, `all` |
+| `--what` | Profiles (`cultural`, `all`, `teatro`, `sports`, …) or comma-separated **allowed** activity slugs — [WHAT.md](references/WHAT.md); **`sescli info what`** lists values. Not free text. |
 | `--format` | `json` (default), `whatsapp` (one line per event), `table`, `pretty` |
-| `--limit` | Max events returned |
+| `--limit` | Max events returned **per request** (API `ppp`); merged `--min-results` output is still capped here |
+| `--min-results` | Page 1 only: if fewer distinct events than N, automatically widen **end date** (+7…+28d) then **capital** units until N (or give up). Does not raise N above `--limit`. |
+| `--summary-chars` | Max runes for `summary` in JSON (default 220; `0` = no truncation). List text is usually **`complemento`**, not a full sinopse. |
 | `--from-now` | Skip events already started — use for "what can I still attend right now?" |
 | `--profile all` | Remove cultural filter when results are too few |
 
 ## Finding venues
 
 ```bash
+sescli info what         # valid --what profiles, synonyms, and API slugs
 sescli info venues search ipiranga   # find a venue by name/slug
 sescli info venues --format pretty   # list all venues
+sescli info event programa-slug   # or full https://…/programacao/slug/ URL (includes HTML synopsis by default)
+sescli info event slug --no-synopsis   # API row only, no page fetch
 ```
 
 Use `--venue NAME` for a single named venue. Use `--venues 2,43,53` only when you already have numeric IDs.
@@ -56,13 +70,13 @@ Use `--venue NAME` for a single named venue. Use `--venues 2,43,53` only when yo
 ## Output formats
 
 - `--format json` — compact JSON with `_meta` and trimmed event objects (default, good for automation)
-- `--format whatsapp` — one terse line per event (good for chat bots)
-- `--format table` — human-readable terminal table
+- `--format whatsapp` — one terse line per event (plus an indented **`summary`** line when present)
+- `--format table` — TAB-separated table (includes **`SUMMARY`** column)
 
 ## Defaults
 
 - Audience: `adulto`
-- Where: `centro` preset (zonacentral unit IDs)
+- **Where:** omitting **`--where`** uses **`capital`** (municipal union of all `zona-*` + `metropolitana`). Use **`--where centro`** when you only want zona-central. Interior/litoral are never part of that default — use **`--where interior`** / **`litoral`** when needed. Details: [WHERE.md](references/WHERE.md).
 - Activity: cultural (theater, cinema, workshops) — use `--profile all` to broaden
 
 ## Getting more results

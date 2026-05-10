@@ -11,8 +11,8 @@ import (
 func TestDefaultConfigMatchesOperatorDefaults(t *testing.T) {
 	cfg := Default()
 
-	if cfg.DefaultPreset != "centro" {
-		t.Fatalf("expected centro default preset, got %q", cfg.DefaultPreset)
+	if cfg.DefaultPreset != "capital" {
+		t.Fatalf("expected capital default preset, got %q", cfg.DefaultPreset)
 	}
 	if cfg.Audience != "adulto" || cfg.Profile != "cultural" || cfg.Format != "json" {
 		t.Fatalf("unexpected defaults: %#v", cfg)

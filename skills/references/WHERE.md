@@ -23,9 +23,29 @@ These labels are **approximate geography** for SESC SP units. Input is normalize
 | `zona-sul` | South macro-area |
 | `zona-leste` | East macro-area |
 | `zona-oeste` | West macro-area |
-| `metropolitana` | Greater metro / outskirts cluster in the table |
+| `metropolitana` | **Periphery subset** in this tool’s table (a handful of unit IDs), **not** “all of Greater São Paulo”. |
 | `interior` | Interior** state** venues |
 | `litoral` | Coast** venues |
+
+## Greater São Paulo (municipal) coverage
+
+For “SESC na capital” / most city venues together (all `zona-*` buckets **plus** the periphery `metropolitana` list — **excluding** `interior` and `litoral`), use:
+
+| Input | Meaning |
+|--------|---------|
+| `capital`, `cidade`, `municipio`, `grande-sp` (spacing/hyphens flexible) | Union of zona-central, zona-norte, zona-sul, zona-leste, zona-oeste, and metropolitana IDs. |
+
+If `config.json` defines a **preset** whose key is `capital`, that preset’s ID list wins over this builtin union (preset resolution runs first).
+
+## Troubleshooting “0 events” (teatro / capital)
+
+| Situation | Cause |
+|-----------|--------|
+| You omitted `--where` | Default is **`centro` (zona-central only)**. Shows in **Pinheiros** (`zona-oeste`) or **Vila Mariana** (`zona-sul`) are **excluded**. Not an API bug — widen `--where` (e.g. `capital` or `zona-oeste,zona-sul` is not supported as one token; use `capital` or separate runs). |
+| `--where capital` still 0 | **Rebuild / reinstall** `sescli` from a revision that includes the **teatro** filter fix (`shows-espetaculos-e-performances` + `linguagem=teatro`) and the **`capital` composite**. Check `_meta.source` in JSON: `atividade=` must not be bare `teatro`. |
+| `--where capital` + config | If **`presets.capital`** exists in `config.json`, it **replaces** the builtin municipal union. A list copied from only **metropolitana** IDs will miss oeste/sul → **0**. Rename the preset or use **`grande-sp`** / **`municipio`** (same union, no preset name clash) if you need the builtin. |
+
+Use **`--format json`** and inspect **`_meta.source`** (`local=…`, `atividade=…`, `linguagem=…`) to confirm the request matches what you expect.
 
 The concrete **unit IDs** per bucket are defined in `internal/presets/zones.go` (`urbanMacroByID`). They can change when the curated roster is updated.
 

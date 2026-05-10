@@ -21,7 +21,7 @@ Roughly parallel to **`sescli` root flags**:
 |---------|---------|
 | `when` | Same grammar as **`--when`** (today, ranges, natural dates). Empty → behaves like CLI default (**today**) via BuildQuery rules. See [WHEN.md](WHEN.md). |
 | `where` | Same as **`--where`** (preset, zona-*, venue slug.) Empty uses **`defaults.where`** from config. See [WHERE.md](WHERE.md). |
-| `what` | Same as **`--what`**. Empty uses **`defaults.what`**. |
+| `what` | Same as **`--what`**: must be a **known profile or allowed slug** (validated; not free text). Empty uses **`defaults.what`**. See [WHAT.md](WHAT.md) and **`sescli info what`**. |
 | `from` / `to` | Optional explicit **`YYYY-MM-DD`** range (same precedence as CLI: overrides `--when` semantics when set). |
 | `format` | `json`, `pretty`, `whatsapp` / `wa` / `chat`, `table`. Empty uses **`defaults.format`**. |
 | `limit` | Page size (**`ppp`**). **`0`** means use config **`defaults.limit`**. |
@@ -29,8 +29,9 @@ Roughly parallel to **`sescli` root flags**:
 | `from_now` | If **`true`**, drop events whose start is already past (São Paulo clock), after fetch — same idea as **`--from-now`**. |
 | `audience` | E.g. **`adulto`**. Empty → **`defaults.audience`**. |
 | `include_raw` | Embed raw WordPress payload in normalized JSON (**advanced**). |
+| `summary_chars` | Max runes for JSON `summary` (default **220** when omitted or **`0`**). |
 
-Implementation: **`cmd/sesmcp/main.go`** → **`exec.BuildQuery`** → same URL builder **`sescapi.EventsURL`** → **`internal/client`** HTTP GET → **`normalize.EventsFromRaw`**.
+Implementation: **`cmd/sesmcp/main.go`** → **`exec.BuildQuery`** → same URL builder **`sescapi.EventsURL`** → **`internal/client`** HTTP GET → **`normalize.EventsFromRawOpts`**.
 
 ### `sesc_search_venues` parameters
 

@@ -8,6 +8,7 @@ search when the SESC programação UI changes.
 
 - `https://www.sescsp.org.br/wp-json/wp/v1/dinamico`
 - `https://www.sescsp.org.br/wp-json/wp/v1/atividades/filter`
+- `https://www.sescsp.org.br/wp-json/wp/v1/atividades/search` — text search (`s`), pagination (`ppp`); **`atividade[]` rows match the filter list shape** (not a detail view).
 - `https://www.sescsp.org.br/wp-json/wp/v1/unidades-atividades` — canonical roster
   for all venues (`group_id`, `group_slug`, `description` = capital/interior/litoral).
 
@@ -59,6 +60,8 @@ Current production shape observed during live tests:
   results.
 - Canonical CLI input is now modeled as `when`, `where`, `what`, page, and
   output. `--what` maps to the API `atividade` filter and audience defaults.
+  Invalid `--what` values are **rejected before the HTTP call** (see
+  `internal/what/Validate`, `sescli info what`, `skills/references/WHAT.md`).
 - `--when` is parsed by deterministic rules first, then by
   `github.com/anatol/naturaldate.go` for natural English phrases.
 - Root CLI help intentionally exposes only canonical query flags and the
@@ -83,6 +86,15 @@ Known query keys:
 - `ppp`
 - `page`
 
+## `atividades/search`
+
+Known query keys (observed):
+
+- `s` — search string (program slug fragment or keywords).
+- `ppp` — page size (optional).
+
+## `atividades/filter` response
+
 Current production shape observed during live tests:
 
 - Top-level object with keys like `editorial`, `atividade`, `total`.
@@ -90,6 +102,12 @@ Current production shape observed during live tests:
 - Events currently include useful fields such as `id`, `titulo`, `link`,
   `unidade`, `tipos_linguagens`, `dataProxSessao`, `dataPrimeiraSessao`,
   `dataUltimaSessao`, `gratuito`, `preco`, `valores`, `complemento`.
+- **List payloads (filter + search)** do **not** ship WordPress-style long copy
+  (`post_excerpt`, `post_content`, `resumo`, `sinopse`, `description`). Short
+  subtitle/credits live in **`complemento`** — SESCLI maps that into JSON
+  `summary` (after excerpt/resumo when present). See
+  [`programacao-urls-and-slugs.md`](programacao-urls-and-slugs.md) for URL/slug
+  notes and detail limitations.
 
 ## MCP surface
 

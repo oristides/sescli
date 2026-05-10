@@ -21,8 +21,9 @@ type PageOptions struct {
 }
 
 type OutputOptions struct {
-	Format     string
-	IncludeRaw bool
+	Format       string
+	IncludeRaw   bool
+	SummaryChars int
 }
 
 func (q Query) EventsQuery() sescapi.EventsQuery {
@@ -38,6 +39,7 @@ func (q Query) EventsQuery() sescapi.EventsQuery {
 		Units:         q.Where.IDs,
 		Audience:      q.What.Audience,
 		ActivityTypes: q.What.ActivityTypes,
+		Language:      q.What.Language,
 		From:          q.When.From,
 		To:            q.When.To,
 		PerPage:       limit,

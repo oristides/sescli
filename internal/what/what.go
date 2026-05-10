@@ -2,6 +2,8 @@ package what
 
 import "strings"
 
+// Slug the SESC site uses in atividades/filter for the parent bucket that
+// contains theater as a child "linguagem" (atividade=teatro matches nothing).
 type Filter struct {
 	Expression string
 	Audience   string
@@ -10,6 +12,8 @@ type Filter struct {
 type Resolved struct {
 	Audience      string
 	ActivityTypes []string
+	// Language is sent as linguagem= on atividades/filter (e.g. teatro under shows).
+	Language string
 }
 
 func Resolve(filter Filter) Resolved {
@@ -21,6 +25,13 @@ func Resolve(filter Filter) Resolved {
 	if expr == "" {
 		expr = "cultural"
 	}
+	if expr == "teatro" {
+		return Resolved{
+			Audience:      audience,
+			ActivityTypes: []string{ShowsPerformancesActivity},
+			Language:      "teatro",
+		}
+	}
 	return Resolved{Audience: audience, ActivityTypes: activityTypes(expr)}
 }
 
@@ -29,22 +40,29 @@ func activityTypes(expr string) []string {
 	case "all", "any", "todos", "todas":
 		return nil
 	case "cultural":
-		return []string{
-			"teatro",
-			"cinema",
-			"teatro-cursos-e-oficinas",
-			"cinema-cursos-e-oficinas",
-			"musica",
-			"danca",
-			"artes-visuais",
-			"literatura-cursos-e-oficinas",
-			"tecnologias-e-artes",
-		}
+		return mapTeatroToShowsParent(append([]string(nil), CulturalBundleSlugs...))
 	case "sports", "esportes":
 		return []string{"esporte-e-atividade-fisica"}
 	default:
-		return splitCSV(expr)
+		raw := splitCSV(expr)
+		parts := make([]string, len(raw))
+		for i, p := range raw {
+			parts[i] = normalizeExprToken(p)
+		}
+		return mapTeatroToShowsParent(parts)
 	}
+}
+
+func mapTeatroToShowsParent(slugs []string) []string {
+	out := make([]string, 0, len(slugs))
+	for _, s := range slugs {
+		if s == "teatro" {
+			out = append(out, ShowsPerformancesActivity)
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
 }
 
 func splitCSV(value string) []string {

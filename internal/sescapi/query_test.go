@@ -52,6 +52,21 @@ func TestEventsURLUsesTypedQueryAndDefaults(t *testing.T) {
 	}
 }
 
+func TestAtividadesSearchURLEncodesQuery(t *testing.T) {
+	u := AtividadesSearchURL("nadine-2", 25)
+	parsed, err := url.Parse(u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.Path != "/wp-json/wp/v1/atividades/search" {
+		t.Fatalf("path %q", parsed.Path)
+	}
+	q := parsed.Query()
+	if q.Get("s") != "nadine-2" || q.Get("ppp") != "25" {
+		t.Fatalf("query %#v", q)
+	}
+}
+
 func TestUnidadesAtividadesURLUsesStaticPath(t *testing.T) {
 	u := UnidadesAtividadesURL()
 	if u != "https://www.sescsp.org.br/wp-json/wp/v1/unidades-atividades" {

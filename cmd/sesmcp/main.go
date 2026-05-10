@@ -32,7 +32,7 @@ func main() {
 	type eventsArgs struct {
 		When       string `json:"when" jsonschema:"today, tomorrow, YYYY-MM-DD, weekend, or dotted/natural ranges"`
 		Where      string `json:"where" jsonschema:"preset centro, zonas metropolitana|interior|litoral|zona-* , or venue slug (e.g. ipiranga)"`
-		What       string `json:"what" jsonschema:"cultural, all, cinema, teatro, sports, or CSV slugs"`
+		What       string `json:"what" jsonschema:"must be a known profile or allowed slug; see sescli info what (not free text)"`
 		Format     string `json:"format" jsonschema:"json | pretty | whatsapp | table"`
 		Limit      int    `json:"limit"`
 		Page       int    `json:"page"`
@@ -41,6 +41,8 @@ func main() {
 		IncludeRaw bool   `json:"include_raw"`
 		From       string `json:"from" jsonschema:"YYYY-MM-DD; optional explicit range"`
 		To         string `json:"to"`
+		// SummaryChars: max runes for JSON summary (0 uses default 220).
+		SummaryChars int `json:"summary_chars"`
 	}
 
 	mcp.AddTool(server, &mcp.Tool{
@@ -73,6 +75,11 @@ func main() {
 			audience = cfg.Defaults.Audience
 		}
 
+		summaryChars := args.SummaryChars
+		if summaryChars == 0 {
+			summaryChars = 220
+		}
+
 		domain, err := exec.BuildQuery(exec.QueryInput{
 			When:          args.When,
 			Where:         where,
@@ -87,6 +94,7 @@ func main() {
 			Page:          page,
 			Format:        format,
 			IncludeRaw:    args.IncludeRaw,
+			SummaryChars:  summaryChars,
 			PresetUnitIDs: cfg.Presets,
 		}, nowSP())
 		if err != nil {
@@ -100,17 +108,18 @@ func main() {
 		if err := client.New(client.Options{Timeout: 25 * time.Second, Retries: 2}).GetJSON(apiURL, &raw); err != nil {
 			return nil, nil, err
 		}
-		evs := normalize.EventsFromRaw(raw, args.IncludeRaw)
+		evs := normalize.EventsFromRawOpts(raw, args.IncludeRaw, normalize.NormalizeOpts{SummaryMax: domain.Out.SummaryChars})
 		if domain.When.FromNow {
 			evs = eventtime.DropStartedBefore(evs, nowSP())
 		}
-		payload := outfmt.Response("events", evs, outfmt.Meta{
-			Total:  len(evs),
-			Source: apiURL,
-			Query:  "events",
-		})
+		reported := normalize.FilterReportedTotalPtr(raw)
+		apiQ := domain.EventsQuery()
+		meta := outfmt.EventListMeta(len(evs), apiQ.Page, apiQ.PerPage, reported, apiURL, "events")
+		meta.DateFrom = domain.When.From
+		meta.DateTo = domain.When.To
+		payload := outfmt.Response("events", evs, meta)
 
-		txt, ferr := marshalFormat(format, payload, evs)
+		txt, ferr := marshalFormat(format, payload, evs, meta)
 		if ferr != nil {
 			return nil, nil, ferr
 		}
@@ -146,16 +155,16 @@ func main() {
 	}
 }
 
-func marshalFormat(format string, payload any, events []normalize.Event) (string, error) {
+func marshalFormat(format string, payload any, events []normalize.Event, meta outfmt.Meta) (string, error) {
 	switch format {
 	case "json", "":
 		return outfmt.JSON(payload, false)
 	case "pretty":
 		return outfmt.JSON(payload, true)
 	case "whatsapp", "wa", "chat":
-		return outfmt.WhatsApp(events), nil
+		return outfmt.WhatsApp(events) + outfmt.WhatsAppQueryFooter(meta) + outfmt.WhatsAppPaginationHint(meta), nil
 	case "table":
-		return outfmt.Table(events), nil
+		return outfmt.Table(events) + outfmt.WhatsAppQueryFooter(meta) + outfmt.WhatsAppPaginationHint(meta), nil
 	default:
 		return "", fmt.Errorf("unknown format %q", format)
 	}

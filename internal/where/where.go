@@ -41,7 +41,7 @@ func Resolve(filter Filter) (Resolved, error) {
 	}
 	ids, err := presets.ResolveUnitIDs([]string{expr})
 	if err != nil {
-		return Resolved{}, fmt.Errorf("resolve where: %w", err)
+		return Resolved{}, invalidExpressionErr(expr)
 	}
 	return Resolved{IDs: ids}, nil
 }

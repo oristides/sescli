@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
+	"sync"
+	"text/template"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"sescli/internal/bilheteria"
 	"sescli/internal/client"
 	"sescli/internal/config"
 	"sescli/internal/eventtime"
@@ -17,41 +21,56 @@ import (
 	outfmt "sescli/internal/format"
 	"sescli/internal/normalize"
 	"sescli/internal/presets"
+	"sescli/internal/programacao"
+	"sescli/internal/programpage"
 	querymodel "sescli/internal/query"
 	"sescli/internal/sescapi"
+	"sescli/internal/what"
 )
 
-type EventFetcher func(context.Context, sescapi.EventsQuery) ([]normalize.Event, string, error)
+// EventFetch is the outcome of an atividades/filter request.
+type EventFetch struct {
+	Events        []normalize.Event
+	Source        string
+	ReportedTotal *int
+}
+
+type EventFetcher func(context.Context, sescapi.EventsQuery) (EventFetch, error)
 type UnitFetcher func(context.Context, sescapi.DinamicoQuery) ([]normalize.Unit, string, error)
 type FacetFetcher func(context.Context, sescapi.DinamicoQuery) (any, string, error)
 
 type App struct {
-	FetchEvents EventFetcher
-	FetchUnits  UnitFetcher
-	FetchFacets FacetFetcher
-	Now         func() time.Time
-	Stdin       io.Reader
+	FetchEvents          EventFetcher
+	FetchUnits           UnitFetcher
+	FetchFacets          FacetFetcher
+	FetchProgramBySlug   func(ctx context.Context, slug string) (normalize.Event, string, error)
+	FetchProgramSynopsis func(ctx context.Context, pageURL string) (string, error)
+	FetchActivityPricing func(ctx context.Context, javaID, referer string) (*normalize.EventPricing, error)
+	Now                  func() time.Time
+	Stdin                io.Reader
 }
 
 type options struct {
-	format     string
-	includeRaw bool
-	units      []string
-	unitNames  []string
-	audience   string
-	profile    string
-	what       string
-	when       string
-	where      string
-	from       string
-	to         string
-	perPage    int
-	page       int
-	fromNow    bool
-	preset     string
-	configPath string
-	force      bool
-	cfg        config.Config
+	format       string
+	includeRaw   bool
+	units        []string
+	unitNames    []string
+	audience     string
+	profile      string
+	what         string
+	when         string
+	where        string
+	from         string
+	to           string
+	perPage      int
+	page         int
+	fromNow      bool
+	preset       string
+	configPath   string
+	force        bool
+	cfg          config.Config
+	minResults   int
+	summaryChars int
 }
 
 func (a App) Execute(ctx context.Context, args []string, stdout, stderr io.Writer) error {
@@ -85,7 +104,7 @@ func (a App) rootCommand(ctx context.Context, stdout, stderr io.Writer, opts *op
 	cmd.SetOut(stderr)
 	cmd.SetErr(stderr)
 	cmd.CompletionOptions.DisableDefaultCmd = true
-	cmd.SetHelpTemplate(rootHelpTemplate())
+	setRootOnlyHelp(cmd)
 	addGlobalFlags(cmd, opts)
 	cmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		opts.loadConfig()
@@ -139,12 +158,24 @@ WHERE:
   or a venue name/slug/id: ipiranga, cinesesc, 56
 
 WHAT:
-  cultural, all, cinema, teatro, sports, or a comma-separated activity slug list
+  Profiles: cultural, all, teatro, sports | esportes, any | todos | todas
+  Or comma-separated slugs (sescli info what lists allowed API values).
+  Typos like "espetaculo" are rejected with a hint; use shows-espetaculos-e-performances or teatro.
 
 OPTIONS:
   --format json|whatsapp|pretty|table
-  --limit N
-  --page N`
+  --limit N (page size / max rows returned after de-duplication)
+  --min-results N  Page 1 only: if fewer than N distinct events, widen end date (+7..+28d) then municipal units (capital) until N or caps. Output still capped by --limit.
+  --summary-chars N  Max length for JSON event summaries (0 = no truncation). Default 220.
+  --page N` + rootHelpTextInfo()
+}
+
+func rootHelpTextInfo() string {
+	return `
+
+INFO:
+  sescli info event SLUG_OR_URL   Program page: API row + HTML synopsis + pricing when id_java present; --no-synopsis skips HTML only.
+  Rebuild (go install ./cmd/sescli) if "sescli info --help" does not list event and what subcommands`
 }
 
 func rootHelpTemplate() string {
@@ -160,6 +191,43 @@ Commands:
 Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
 `
+}
+
+// setRootOnlyHelp installs help rendering that keeps the custom root layout while letting
+// subcommands use Cobra's default help so Examples, usage, and global flags show correctly.
+func setRootOnlyHelp(root *cobra.Command) {
+	root.SetHelpFunc(func(c *cobra.Command, args []string) {
+		out := c.OutOrStdout()
+		if c.Root() != c {
+			// Subcommand: same as cobra.defaultHelpFunc (not the narrow root template).
+			usage := strings.TrimSpace(c.Long)
+			if usage == "" {
+				usage = strings.TrimSpace(c.Short)
+			}
+			if usage != "" {
+				fmt.Fprintln(out, usage)
+				fmt.Fprintln(out)
+			}
+			if c.Runnable() || c.HasSubCommands() {
+				fmt.Fprint(out, c.UsageString())
+			}
+			return
+		}
+		t := template.New("sescli-root-help")
+		t.Funcs(template.FuncMap{
+			"trimTrailingWhitespaces": strings.TrimSpace,
+			"rpad": func(s string, width int) string {
+				if width <= 0 {
+					return s
+				}
+				return fmt.Sprintf("%-*s", width, s)
+			},
+		})
+		template.Must(t.Parse(rootHelpTemplate()))
+		if err := t.Execute(out, c); err != nil {
+			c.PrintErrln(err)
+		}
+	})
 }
 
 func (a App) centroCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
@@ -178,6 +246,14 @@ func (a App) dateCommand(ctx context.Context, stdout io.Writer, opts *options, n
 		Short: "Events " + name + " using configured defaults or optional venue/preset",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// The hidden `centro today` / `centro tomorrow` shortcuts are namespaced
+			// under the centro command — they must keep zona-central semantics even
+			// though the default geography preset is `capital`.
+			if cmd.Parent() != nil && cmd.Parent().Name() == "centro" {
+				opts.preset = "centro"
+				opts.where = ""
+				opts.unitNames = nil
+			}
 			if len(args) == 1 {
 				opts.applyWhere(args[0])
 			}
@@ -223,7 +299,7 @@ func (a App) unitsCommand(ctx context.Context, stdout io.Writer, opts *options) 
 				return err
 			}
 			payload := outfmt.Response("units", units, outfmt.Meta{Total: len(units), Source: source, Query: "units"})
-			return printPayload(stdout, opts.format, payload, nil)
+			return printPayload(stdout, opts.format, payload, nil, outfmt.Meta{})
 		},
 	}
 	cmd.AddCommand(&cobra.Command{
@@ -233,7 +309,7 @@ func (a App) unitsCommand(ctx context.Context, stdout io.Writer, opts *options) 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			matches := presets.SearchUnits(args[0])
 			payload := outfmt.Response("units", matches, outfmt.Meta{Total: len(matches), Query: "units:search"})
-			return printPayload(stdout, opts.format, payload, nil)
+			return printPayload(stdout, opts.format, payload, nil, outfmt.Meta{})
 		},
 	})
 	return cmd
@@ -249,8 +325,26 @@ func (a App) venuesCommand(ctx context.Context, stdout io.Writer, opts *options)
 func (a App) infoCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "info",
-		Short: "Lookup supporting information such as venues and facets",
+		Short: "Look up one event by slug/URL, valid --what values, venues, or API facets",
+		Long: `Subcommands:
+
+  event   One programação activity: search row + synopsis (HTML) + ticket pricing when id_java exists
+  what    Valid profile keywords, synonyms, and --what activity slugs
+  venues  List or search SESC units (unidades)
+  facets  Raw facet metadata from the dinamico API
+
+The program slug is the path segment after /programacao/ on the public site (e.g. .../programacao/nadine-2/ → nadine-2).
+
+Examples:
+  sescli info event shows-espetaculos-e-performances/my-show --format json
+  sescli info what
+  sescli info venues search pinheiros
+
+If "sescli info --help" does not list the event and what subcommands, rebuild from this repo: go install ./cmd/sescli`,
 	}
+	// Most specific / common first so they appear early in "sescli info --help".
+	cmd.AddCommand(a.eventInfoCommand(ctx, stdout, opts))
+	cmd.AddCommand(a.whatInfoCommand(stdout))
 	venues := a.venuesCommand(ctx, stdout, opts)
 	venues.Use = "venues"
 	venues.Hidden = false
@@ -260,6 +354,161 @@ func (a App) infoCommand(ctx context.Context, stdout io.Writer, opts *options) *
 	facets.Hidden = false
 	cmd.AddCommand(facets)
 	return cmd
+}
+
+func (a App) whatInfoCommand(stdout io.Writer) *cobra.Command {
+	return &cobra.Command{
+		Use:   "what",
+		Short: "List valid --what profile keywords, synonyms, and activity slugs",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := fmt.Fprintf(stdout, "Profiles (single token; do not combine with commas):\n  %s\n\n", strings.Join(what.ProfileTokens, ", "))
+			if err != nil {
+				return err
+			}
+			_, err = fmt.Fprint(stdout, "Synonyms (accepted aliases → API slug):\n")
+			if err != nil {
+				return err
+			}
+			var keys []string
+			for k := range what.ExpressionSynonyms {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				if _, e := fmt.Fprintf(stdout, "  %s → %s\n", k, what.ExpressionSynonyms[k]); e != nil {
+					return e
+				}
+			}
+			slugs := what.DocActivitySlugs()
+			if _, err := fmt.Fprintf(stdout, "\nActivity slugs (single token or comma-separated):\n  %s\n", strings.Join(slugs, ", ")); err != nil {
+				return err
+			}
+			_, err = fmt.Fprint(stdout, "\nNotes:\n  • teatro alone → shows bucket + linguagem=teatro. For all show types, use shows-espetaculos-e-performances.\n  • cultural (default) bundles several slugs; see CulturalBundleSlugs in the source.\n")
+			return err
+		},
+	}
+}
+
+func (a App) eventInfoCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
+	var apiOnly bool
+	cmd := &cobra.Command{
+		Use:   "event SLUG_OR_URL",
+		Short: "One programação event: API metadata, HTML sinopse, and ticket pricing when id_java exists",
+		Long: `Argument SLUG_OR_URL identifies one activity page under the site's programação section:
+
+  • Program slug alone — the last segment of the URL path, e.g. "nadine-2" from:
+      https://www.sescsp.org.br/programacao/nadine-2/
+  • Full URL or path — same slug is extracted; quotes help in the shell if the URL has "&" or other characters.
+
+What it does:
+  1) GET /wp-json/wp/v1/atividades/search with that slug, then picks the result whose link matches /programacao/{slug}.
+  2) Merges list fields into JSON: title, url, venue, dates/times, summary (from complemento/short list text), categories, id, id_java, etc.
+  3) By default, GET the public HTML program page and fills synopsis (long sinopse); use --no-synopsis to skip this.
+  4) If the row has id_java, loads bilheteria ticket data (pricing, aggregate price, is_free when applicable) in parallel with step 3.
+
+Global flags apply here (--format, --summary-chars). JSON output wraps the event in the usual sescli envelope with _meta.source.
+
+HTML extraction is layout-dependent; throttle automated calls if scripting`,
+		Example: `  sescli info event nadine-2 --format json
+  sescli info event 'https://www.sescsp.org.br/programacao/nadine-2/' --format json
+  sescli info event cinema-foo --no-synopsis --format json`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			slug := programacao.SlugFromUserArg(args[0])
+			if slug == "" {
+				return fmt.Errorf("could not parse program slug from %q", args[0])
+			}
+			norm := normalize.NormalizeOpts{SummaryMax: opts.summaryChars}
+			ev, source, err := a.resolveProgramEvent(ctx, slug, norm)
+			if err != nil {
+				return err
+			}
+			needSynopsis := !apiOnly
+			needPricing := strings.TrimSpace(ev.JavaID) != ""
+			if needSynopsis && strings.TrimSpace(ev.URL) == "" {
+				return fmt.Errorf("cannot fetch synopsis: event has no URL")
+			}
+			ref := strings.TrimSpace(ev.URL)
+			if ref == "" {
+				ref = "https://www.sescsp.org.br/programacao/"
+			}
+			var synText string
+			var synErr error
+			var pricing *normalize.EventPricing
+			var priceErr error
+
+			runSynopsis := func() {
+				if a.FetchProgramSynopsis != nil {
+					synText, synErr = a.FetchProgramSynopsis(ctx, ev.URL)
+				} else {
+					synText, synErr = programpage.FetchSynopsis(ctx, ev.URL)
+				}
+			}
+			runPricing := func() {
+				if a.FetchActivityPricing != nil {
+					pricing, priceErr = a.FetchActivityPricing(ctx, ev.JavaID, ref)
+				} else {
+					pricing, priceErr = bilheteria.FetchActivityPricing(ctx, ev.JavaID, ref)
+				}
+			}
+
+			switch {
+			case needSynopsis && needPricing:
+				var wg sync.WaitGroup
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					runSynopsis()
+				}()
+				go func() {
+					defer wg.Done()
+					runPricing()
+				}()
+				wg.Wait()
+				if synErr != nil {
+					return fmt.Errorf("synopsis: %w", synErr)
+				}
+				ev.Synopsis = synText
+				if priceErr == nil && pricing != nil {
+					normalize.ApplyBilheteriaPricing(&ev, pricing)
+				}
+			case needSynopsis:
+				runSynopsis()
+				if synErr != nil {
+					return fmt.Errorf("synopsis: %w", synErr)
+				}
+				ev.Synopsis = synText
+			case needPricing:
+				runPricing()
+				if priceErr == nil && pricing != nil {
+					normalize.ApplyBilheteriaPricing(&ev, pricing)
+				}
+			}
+			meta := outfmt.Meta{Source: source, Query: "event:" + slug}
+			payload := outfmt.Response("event", ev, meta)
+			return printPayload(stdout, opts.format, payload, []normalize.Event{ev}, meta)
+		},
+	}
+	cmd.Flags().BoolVar(&apiOnly, "no-synopsis", false, "skip HTML fetch; return only search/API fields (no synopsis)")
+	return cmd
+}
+
+func (a App) resolveProgramEvent(ctx context.Context, slug string, norm normalize.NormalizeOpts) (normalize.Event, string, error) {
+	_ = ctx
+	if a.FetchProgramBySlug != nil {
+		return a.FetchProgramBySlug(ctx, slug)
+	}
+	rawURL := sescapi.AtividadesSearchURL(slug, 50)
+	var raw any
+	if err := client.New(client.Options{Timeout: 25 * time.Second, Retries: 2}).GetJSON(rawURL, &raw); err != nil {
+		return normalize.Event{}, rawURL, err
+	}
+	events := normalize.EventsFromRawOpts(raw, false, norm)
+	ev, ok := programacao.PickEventByProgramSlug(events, slug)
+	if !ok {
+		return normalize.Event{}, rawURL, fmt.Errorf("no activity in search results matched program slug %q (empty or unrelated results; try another slug)", slug)
+	}
+	return ev, rawURL, nil
 }
 
 func (a App) facetsCommand(ctx context.Context, stdout io.Writer, opts *options) *cobra.Command {
@@ -283,7 +532,7 @@ func (a App) facetsCommand(ctx context.Context, stdout io.Writer, opts *options)
 				return err
 			}
 			payload := outfmt.Response("facets", raw, outfmt.Meta{Source: source, Query: "facets:" + mode})
-			return printPayload(stdout, opts.format, payload, nil)
+			return printPayload(stdout, opts.format, payload, nil, outfmt.Meta{})
 		},
 	}
 	cmd.Flags().StringVar(&mode, "mode", sescapi.ModeLinguagens, "dinamico mode: unidade, tipos_linguagens, acesso")
@@ -417,10 +666,10 @@ func (a App) presetsConfigCommand(stdout io.Writer, opts *options) *cobra.Comman
 	}
 
 	setCmd := &cobra.Command{
-		Use:   "set PRESET IDS...",
-		Short: "Replace preset with these unit IDs (comma or space separated)",
+		Use:     "set PRESET IDS...",
+		Short:   "Replace preset with these unit IDs (comma or space separated)",
 		Example: "  sescli config presets set meu-lado 43,52,56\n\n  sescli config presets add centro 56",
-		Args: cobra.MinimumNArgs(2),
+		Args:    cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path, err := resolveConfigPath(opts.configPath)
 			if err != nil {
@@ -539,21 +788,30 @@ func (a App) presetsConfigCommand(stdout io.Writer, opts *options) *cobra.Comman
 func (a App) printEvents(ctx context.Context, stdout io.Writer, dq querymodel.Query, opts *options) error {
 	fetch := a.FetchEvents
 	if fetch == nil {
-		fetch = realEventFetcher(opts.includeRaw)
+		fetch = realEventFetcher(opts.includeRaw, normalize.NormalizeOpts{SummaryMax: opts.summaryChars})
 	}
-	api := dq.EventsQuery()
-	events, source, err := fetch(ctx, api)
+	g, err := gatherEventsWithMinResults(ctx, fetch, dq, opts.minResults)
 	if err != nil {
 		return err
 	}
+	events := g.Events
 	if dq.When.FromNow {
 		events = eventtime.DropStartedBefore(events, a.now())
 	}
-	payload := outfmt.Response("events", events, outfmt.Meta{Total: len(events), Source: source, Query: "events"})
-	return printPayload(stdout, opts.format, payload, events)
+	api := dq.EventsQuery()
+	meta := outfmt.EventListMeta(len(events), api.Page, api.PerPage, g.ReportedTotal, g.Source, "events")
+	meta.DateFrom = dq.When.From
+	meta.DateTo = g.EffectiveDateTo
+	if opts.minResults > 0 && api.Page <= 1 {
+		meta.MinResultsTarget = opts.minResults
+		meta.MinResultsWidenedDate = g.WidenedDate
+		meta.MinResultsWidenedWhere = g.WidenedWhere
+	}
+	payload := outfmt.Response("events", events, meta)
+	return printPayload(stdout, opts.format, payload, events, meta)
 }
 
-func printPayload(stdout io.Writer, format string, payload any, events []normalize.Event) error {
+func printPayload(stdout io.Writer, format string, payload any, events []normalize.Event, meta outfmt.Meta) error {
 	var (
 		out string
 		err error
@@ -565,8 +823,12 @@ func printPayload(stdout io.Writer, format string, payload any, events []normali
 		out, err = outfmt.JSON(payload, true)
 	case "whatsapp", "wa", "chat":
 		out = outfmt.WhatsApp(events)
+		out += outfmt.WhatsAppQueryFooter(meta)
+		out += outfmt.WhatsAppPaginationHint(meta)
 	case "table":
 		out = outfmt.Table(events)
+		out += outfmt.WhatsAppQueryFooter(meta)
+		out += outfmt.WhatsAppPaginationHint(meta)
 	default:
 		return fmt.Errorf("unknown format %q", format)
 	}
@@ -581,7 +843,7 @@ func addGlobalFlags(cmd *cobra.Command, opts *options) {
 	cmd.PersistentFlags().StringVar(&opts.format, "format", opts.format, "output format: json, whatsapp, pretty, table")
 	cmd.PersistentFlags().StringVar(&opts.audience, "audience", opts.audience, "audience tag, default adulto")
 	cmd.PersistentFlags().StringVar(&opts.profile, "profile", opts.profile, "activity profile: cultural, sports, or explicit activity slug")
-	cmd.PersistentFlags().StringVar(&opts.what, "what", opts.what, "activity/profile/audience concept: cultural, all, cinema, teatro")
+	cmd.PersistentFlags().StringVar(&opts.what, "what", opts.what, "activity profile or comma-separated slugs (sescli info what)")
 	cmd.PersistentFlags().StringVar(&opts.when, "when", opts.when, "date shortcut or date: today, tomorrow, YYYY-MM-DD")
 	cmd.PersistentFlags().StringVar(&opts.where, "where", opts.where, "preset key (default centro), heuristic zone (zona-sul,...), venue name/slug/id")
 	cmd.PersistentFlags().StringSliceVar(&opts.units, "units", opts.units, "comma-separated unit IDs, or repeat the flag")
@@ -597,8 +859,10 @@ func addGlobalFlags(cmd *cobra.Command, opts *options) {
 	cmd.PersistentFlags().BoolVar(&opts.fromNow, "from-now", opts.fromNow, "drop events whose start time is before now (Sao Paulo time)")
 	cmd.PersistentFlags().StringVar(&opts.preset, "preset", opts.preset, "unit preset from config (default centro name) or geographic override")
 	cmd.PersistentFlags().StringVar(&opts.configPath, "config", opts.configPath, "config file path (default: OS user config dir, or SESCLI_CONFIG)")
+	cmd.PersistentFlags().IntVar(&opts.minResults, "min-results", 0, "page 1: widen date/region until at least N distinct events (capped by --limit)")
+	cmd.PersistentFlags().IntVar(&opts.summaryChars, "summary-chars", 220, "max runes for event summary in JSON output (0 disables truncation)")
 	cmd.PersistentFlags().BoolVar(&opts.includeRaw, "include-raw", opts.includeRaw, "include raw WordPress payload in JSON")
-	for _, name := range []string{"audience", "profile", "units", "venues", "unit", "venue", "from", "to", "from-now", "preset", "include-raw"} {
+	for _, name := range []string{"audience", "profile", "units", "venues", "unit", "venue", "from", "to", "from-now", "preset", "include-raw", "summary-chars"} {
 		_ = cmd.PersistentFlags().MarkHidden(name)
 	}
 }
@@ -607,13 +871,14 @@ func defaultOptions() options {
 	defaults := presets.Defaults()
 	cfg := config.Default()
 	return options{
-		format:   cfg.Format,
-		audience: defaults.Audience,
-		profile:  defaults.Profile,
-		preset:   defaults.Preset,
-		perPage:  defaults.PerPage,
-		page:     defaults.Page,
-		cfg:      cfg,
+		format:       cfg.Format,
+		audience:     defaults.Audience,
+		profile:      defaults.Profile,
+		preset:       "",
+		perPage:      defaults.PerPage,
+		page:         defaults.Page,
+		summaryChars: 220,
+		cfg:          cfg,
 	}
 }
 
@@ -632,8 +897,11 @@ func (o *options) loadConfig() {
 	if o.profile == "" || o.profile == "cultural" {
 		o.profile = cfg.Profile
 	}
-	if o.preset == "" || o.preset == "centro" {
+	if o.preset == "" {
 		o.preset = cfg.DefaultPreset
+	}
+	if o.preset == "" {
+		o.preset = "capital"
 	}
 	if o.perPage == 0 || o.perPage == presets.Defaults().PerPage {
 		o.perPage = cfg.Limit
@@ -660,6 +928,7 @@ func (o options) domainQuery(base time.Time) (querymodel.Query, error) {
 		Page:          o.page,
 		Format:        o.format,
 		IncludeRaw:    o.includeRaw,
+		SummaryChars:  o.summaryChars,
 		PresetUnitIDs: o.cfg.Presets,
 	}, base)
 }
@@ -676,8 +945,8 @@ func (o *options) applyWhere(where string) {
 		o.preset = where
 		return
 	}
-	if presets.CanonicalUrbanMacroZone(where) != "" {
-		// zona-* | interior | litoral | metropolitana — keep CLI --where literal for where.Resolve.
+	if presets.IsBuiltinWhereGeography(where) {
+		// Zona-*, interior, litoral, metropolitana, capital/cidade/… — keep --where literal for where.Resolve.
 		return
 	}
 	switch strings.ToLower(strings.TrimSpace(where)) {
@@ -688,18 +957,23 @@ func (o *options) applyWhere(where string) {
 	}
 }
 
-func realEventFetcher(includeRaw bool) EventFetcher {
-	return func(ctx context.Context, q sescapi.EventsQuery) ([]normalize.Event, string, error) {
+func realEventFetcher(includeRaw bool, norm normalize.NormalizeOpts) EventFetcher {
+	return func(ctx context.Context, q sescapi.EventsQuery) (EventFetch, error) {
+		_ = ctx
 		rawURL, err := sescapi.EventsURL(q)
 		if err != nil {
-			return nil, "", err
+			return EventFetch{}, err
 		}
 		var raw any
 		err = client.New(client.Options{}).GetJSON(rawURL, &raw)
 		if err != nil {
-			return nil, rawURL, err
+			return EventFetch{}, err
 		}
-		return normalize.EventsFromRaw(raw, includeRaw), rawURL, nil
+		return EventFetch{
+			Events:        normalize.EventsFromRawOpts(raw, includeRaw, norm),
+			Source:        rawURL,
+			ReportedTotal: normalize.FilterReportedTotalPtr(raw),
+		}, nil
 	}
 }
 
@@ -788,10 +1062,18 @@ func splitCSV(values []string) []string {
 	return out
 }
 
+func trimGoRunSentinel(args []string) []string {
+	for len(args) > 0 && args[0] == "--" {
+		args = args[1:]
+	}
+	return args
+}
+
 func Run() {
 	app := App{}
 	_, _ = config.Ensure("")
-	if err := app.Execute(context.Background(), os.Args[1:], os.Stdout, os.Stderr); err != nil {
+	args := trimGoRunSentinel(os.Args[1:])
+	if err := app.Execute(context.Background(), args, os.Stdout, os.Stderr); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(exitCode(err))
 	}

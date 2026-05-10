@@ -8,9 +8,42 @@ import (
 	"strings"
 )
 
+// NormalizeOpts tweaks how raw API rows are turned into Event fields.
+type NormalizeOpts struct {
+	// SummaryMax is the max rune length for Summary after cleaning. 0 disables
+	// truncation; values < 0 use the default (220).
+	SummaryMax int
+}
+
+const defaultSummaryMax = 220
+
+// DefaultNormalizeOpts matches historical sescli behavior.
+func DefaultNormalizeOpts() NormalizeOpts {
+	return NormalizeOpts{SummaryMax: defaultSummaryMax}
+}
+
+func (o NormalizeOpts) summaryLimit() int {
+	if o.SummaryMax < 0 {
+		return defaultSummaryMax
+	}
+	return o.SummaryMax
+}
+
+// EventPricing is ticket price data from the Java bilheteria API (via WordPress admin-ajax proxy).
+type EventPricing struct {
+	Gratuito          bool   `json:"gratuito,omitempty"`
+	ValorInteira      string `json:"valor_inteira,omitempty"`
+	ValorMeia         string `json:"valor_meia,omitempty"`
+	ValorComerciario  string `json:"valor_comerciario,omitempty"`
+	StatusIngresso    string `json:"status_ingresso,omitempty"`
+	QtdeIngressosWeb  int    `json:"qtde_ingressos_web,omitempty"`
+	QtdeIngressosRede int    `json:"qtde_ingressos_rede,omitempty"`
+}
+
 // Event is the compact, stable event shape emitted by sescli.
 type Event struct {
 	ID         string         `json:"id,omitempty"`
+	JavaID     string         `json:"id_java,omitempty"`
 	Title      string         `json:"title,omitempty"`
 	URL        string         `json:"url,omitempty"`
 	Venue      string         `json:"venue,omitempty"`
@@ -21,9 +54,11 @@ type Event struct {
 	Free       bool           `json:"is_free,omitempty"`
 	Online     bool           `json:"is_online,omitempty"`
 	PriceLabel string         `json:"price,omitempty"`
+	Pricing    *EventPricing  `json:"pricing,omitempty"`
 	Categories []string       `json:"categories,omitempty"`
 	Activities []string       `json:"activities,omitempty"`
 	Summary    string         `json:"summary,omitempty"`
+	Synopsis   string         `json:"synopsis,omitempty"`
 	Raw        map[string]any `json:"raw,omitempty"`
 }
 
@@ -41,13 +76,20 @@ type Unit struct {
 var tags = regexp.MustCompile(`<[^>]+>`)
 
 func EventFromRaw(raw map[string]any, includeRaw bool) Event {
+	return EventFromRawOpts(raw, includeRaw, DefaultNormalizeOpts())
+}
+
+// EventFromRawOpts is like EventFromRaw with custom normalization options.
+func EventFromRawOpts(raw map[string]any, includeRaw bool, opts NormalizeOpts) Event {
+	limit := opts.summaryLimit()
 	event := Event{
 		ID:         firstString(raw, "ID", "id", "post_id"),
+		JavaID:     firstString(raw, "id_java", "idJava"),
 		Title:      firstString(raw, "post_title", "titulo", "title", "nome", "name"),
 		URL:        absoluteURL(firstString(raw, "permalink", "link", "url")),
 		Venue:      firstVenue(raw),
 		DateStart:  firstString(raw, "data_inicio", "date_start", "dataPrimeiraSessao", "dataProxSessao", "inicio"),
-		DateEnd:    firstString(raw, "data_fim", "date_end", "fim"),
+		DateEnd:    firstString(raw, "data_fim", "date_end", "dataUltimaSessao", "fim"),
 		TimeStart:  firstString(raw, "hora_inicio", "time_start"),
 		TimeEnd:    firstString(raw, "hora_fim", "time_end"),
 		Free:       truthy(first(raw, "gratuito", "is_free", "free")),
@@ -55,7 +97,10 @@ func EventFromRaw(raw map[string]any, includeRaw bool) Event {
 		PriceLabel: firstString(raw, "preco", "price", "valor", "gratuito"),
 		Categories: firstCategories(raw),
 		Activities: stringList(first(raw, "tipo_atividade", "tipos_atividades", "atividade")),
-		Summary:    cleanText(firstString(raw, "post_excerpt", "resumo", "post_content", "description"), 220),
+		Summary: cleanText(firstString(raw,
+			"post_excerpt", "resumo", "complemento", "sinopse",
+			"post_content", "description",
+		), limit),
 	}
 	if event.Free && event.PriceLabel == "" {
 		event.PriceLabel = "Gratis"
@@ -73,13 +118,18 @@ func EventFromRaw(raw map[string]any, includeRaw bool) Event {
 }
 
 func EventsFromRaw(raw any, includeRaw bool) []Event {
+	return EventsFromRawOpts(raw, includeRaw, DefaultNormalizeOpts())
+}
+
+// EventsFromRawOpts is like EventsFromRaw with custom normalization options.
+func EventsFromRawOpts(raw any, includeRaw bool, opts NormalizeOpts) []Event {
 	items := eventItems(raw)
 	if len(items) == 0 {
 		return nil
 	}
 	events := make([]Event, 0, len(items))
 	for _, item := range items {
-		event := EventFromRaw(item, includeRaw)
+		event := EventFromRawOpts(item, includeRaw, opts)
 		if event.Title == "" && event.ID == "" {
 			continue
 		}
@@ -300,4 +350,37 @@ func titlesFromList(value any) []string {
 		}
 	}
 	return out
+}
+
+// ApplyBilheteriaPricing attaches portal ticket data and fills aggregate price/free when the list row was incomplete.
+func ApplyBilheteriaPricing(e *Event, p *EventPricing) {
+	if e == nil || p == nil {
+		return
+	}
+	e.Pricing = p
+	if p.Gratuito {
+		e.Free = true
+		if e.PriceLabel == "" {
+			e.PriceLabel = "Gratis"
+		}
+		return
+	}
+	var parts []string
+	if s := strings.TrimSpace(p.ValorInteira); s != "" && !looksZeroBRL(s) {
+		parts = append(parts, "Inteira "+s)
+	}
+	if s := strings.TrimSpace(p.ValorMeia); s != "" && !looksZeroBRL(s) {
+		parts = append(parts, "Meia "+s)
+	}
+	if s := strings.TrimSpace(p.ValorComerciario); s != "" && !looksZeroBRL(s) {
+		parts = append(parts, "Comerciário "+s)
+	}
+	if len(parts) > 0 && e.PriceLabel == "" {
+		e.PriceLabel = strings.Join(parts, "; ")
+	}
+}
+
+func looksZeroBRL(s string) bool {
+	ls := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(s, " ", "")))
+	return ls == "$0.00" || ls == "r$0,00" || ls == "r$0.00" || ls == "0,00" || ls == "0.00"
 }

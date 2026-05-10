@@ -1,6 +1,9 @@
 package normalize
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestEventFromRawPrefersUsefulSuccinctFields(t *testing.T) {
 	raw := map[string]any{
@@ -39,6 +42,33 @@ func TestEventFromRawPrefersUsefulSuccinctFields(t *testing.T) {
 	}
 }
 
+func TestEventFromRawMapsComplementoToSummary(t *testing.T) {
+	event := EventFromRaw(map[string]any{
+		"id":             "1",
+		"titulo":         "Nadine",
+		"link":           "/programacao/nadine-2",
+		"complemento":    "com Luiza Romão",
+		"gratuito":       "1",
+		"dataProxSessao": "2026-05-23T20:30",
+		"unidade":        []any{map[string]any{"name": "Itaquera"}},
+	}, false)
+	if event.Summary != "com Luiza Romão" {
+		t.Fatalf("summary %q", event.Summary)
+	}
+}
+
+func TestEventFromRawOptsSummaryZeroIsUnlimited(t *testing.T) {
+	long := strings.Repeat("x", 400)
+	event := EventFromRawOpts(map[string]any{
+		"id":          "1",
+		"titulo":      "X",
+		"complemento": long,
+	}, false, NormalizeOpts{SummaryMax: 0})
+	if !strings.HasSuffix(event.Summary, "xxx") || strings.HasSuffix(event.Summary, "...") {
+		t.Fatalf("expected full summary without ellipsis, len=%d", len(event.Summary))
+	}
+}
+
 func TestEventsFromRawSkipsInvalidItems(t *testing.T) {
 	events := EventsFromRaw([]any{
 		map[string]any{"ID": "1", "post_title": "Valid"},
@@ -55,6 +85,7 @@ func TestEventsFromRawAcceptsLiveObjectEnvelope(t *testing.T) {
 		"atividade": []any{
 			map[string]any{
 				"id":                 float64(1209154),
+				"id_java":            "999001",
 				"titulo":             "Boate Class",
 				"link":               "/programacao/boate-class",
 				"gratuito":           "Atividade gratuita",
@@ -79,6 +110,9 @@ func TestEventsFromRawAcceptsLiveObjectEnvelope(t *testing.T) {
 	}
 	if event.Venue != "Avenida Paulista" || !event.Free {
 		t.Fatalf("expected venue/free from live payload, got %#v", event)
+	}
+	if event.JavaID != "999001" {
+		t.Fatalf("expected JavaID, got %q", event.JavaID)
 	}
 	if len(event.Categories) != 1 || event.Categories[0] != "Cursos e Oficinas" {
 		t.Fatalf("expected language category, got %#v", event.Categories)

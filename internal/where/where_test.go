@@ -1,6 +1,9 @@
 package where
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestResolveConfigOverridesCentro(t *testing.T) {
 	got, err := Resolve(Filter{
@@ -72,5 +75,8 @@ func TestResolveUnknownVenue(t *testing.T) {
 	_, err := Resolve(Filter{Expression: "not-a-venue"})
 	if err == nil {
 		t.Fatal("expected unknown venue error")
+	}
+	if !strings.Contains(err.Error(), "invalid --where") || !strings.Contains(err.Error(), "ALLOWED_GEOGRAPHY_AND_SPECIAL_LABELS") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

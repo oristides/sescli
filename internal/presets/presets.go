@@ -2,7 +2,8 @@ package presets
 
 import "strings"
 
-// Defaults captures the v1 operator persona: adult, geographic central units, cultural focus.
+// Defaults captures defaults: adult audience, municipal São Paulo geography
+// (capital union), cultural profile.
 type DefaultSet struct {
 	Audience      string
 	Profile       string
@@ -11,6 +12,15 @@ type DefaultSet struct {
 	ActivityTypes []string
 	PerPage       int
 	Page          int
+}
+
+// DefaultCapitalUnitIDs is the builtin municipal union (all zona-* + metropolitana).
+func DefaultCapitalUnitIDs() []string {
+	ids, ok := UnitIDsWithUrbanMacroZone("capital")
+	if !ok || len(ids) == 0 {
+		return nil
+	}
+	return append([]string(nil), ids...)
 }
 
 // DefaultInstallPresets returns preset keys and unit IDs seeded into config.json on init.
@@ -50,6 +60,9 @@ func UnitIDsForPreset(preset string) []string {
 	case "", "centro", "center", "default":
 		return DefaultCentroPresetUnitIDs()
 	default:
+		if ids, ok := UnitIDsWithUrbanMacroZone(preset); ok {
+			return append([]string(nil), ids...)
+		}
 		return Dedupe(strings.Split(preset, ","))
 	}
 }
@@ -58,9 +71,10 @@ func Defaults() DefaultSet {
 	return DefaultSet{
 		Audience:      "adulto",
 		Profile:       "cultural",
-		Preset:        "centro",
-		UnitIDs:       DefaultCentroPresetUnitIDs(),
-		ActivityTypes: []string{"teatro", "cinema", "cursos-e-oficinas"},
+		Preset:        "capital",
+		UnitIDs:       DefaultCapitalUnitIDs(),
+		// Match atividades/filter taxonomy: theater is under shows-espetaculos-e-performances, not atividade=teatro.
+		ActivityTypes: []string{"shows-espetaculos-e-performances", "cinema", "cursos-e-oficinas"},
 		PerPage:       40,
 		Page:          1,
 	}

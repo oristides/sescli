@@ -28,7 +28,7 @@ func TestQueryConvertsToEventsQuery(t *testing.T) {
 	if len(got.Units) != 1 || got.Units[0] != "56" {
 		t.Fatalf("unexpected where conversion: %#v", got.Units)
 	}
-	if got.Audience != "adulto" || len(got.ActivityTypes) != 1 || got.ActivityTypes[0] != "cinema" {
+	if got.Audience != "adulto" || len(got.ActivityTypes) != 1 || got.ActivityTypes[0] != "cinema" || got.Language != "" {
 		t.Fatalf("unexpected what conversion: %#v", got)
 	}
 	if got.PerPage != 20 || got.Page != 2 {

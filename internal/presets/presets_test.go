@@ -20,8 +20,12 @@ func TestDefaultInstallCentroPresetMatchesZonaCentral(t *testing.T) {
 	if !slices.Equal(cent, zoneCentral) {
 		t.Fatalf("install centro != zonacentral: %#v vs %#v", cent, zoneCentral)
 	}
-	if !slices.Equal(defaultsUnits, zoneCentral) {
-		t.Fatalf("defaults unit ids %#v vs zone %#v", defaultsUnits, zoneCentral)
+	capitalIDs, ok := UnitIDsWithUrbanMacroZone("capital")
+	if !ok || len(capitalIDs) == 0 {
+		t.Fatalf("expected capital union ids")
+	}
+	if !slices.Equal(defaultsUnits, capitalIDs) {
+		t.Fatalf("defaults unit ids %#v vs capital %#v", defaultsUnits, capitalIDs)
 	}
 }
 
@@ -39,8 +43,8 @@ func TestDefaultCentroUsesGeographicFilterNotRetrofits(t *testing.T) {
 }
 
 func TestDefaultsPresetName(t *testing.T) {
-	if Defaults().Preset != "centro" {
-		t.Fatalf("expected default preset name centro")
+	if Defaults().Preset != "capital" {
+		t.Fatalf("expected default preset name capital")
 	}
 }
 
@@ -59,8 +63,8 @@ func TestDefaultProfileMatchesAdultCulturalTaste(t *testing.T) {
 	if got := defaults.ActivityTypes; len(got) < 2 {
 		t.Fatalf("expected theater/cinema/workshop activity types, got %#v", got)
 	}
-	if len(defaults.UnitIDs) == 0 {
-		t.Fatalf("expected default zonacentral-derived units")
+	if n := len(DefaultCentroPresetUnitIDs()); len(defaults.UnitIDs) <= n {
+		t.Fatalf("expected default capital union wider than zona-central (centro %d ids, got %d)", n, len(defaults.UnitIDs))
 	}
 }
 

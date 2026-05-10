@@ -99,7 +99,7 @@ go run ./cmd/sescli --when tomorrow --where ipiranga --what cinema --format what
 
 See `sescli help` after install. Agent-oriented usage is documented in [`skills/SKILL.md`](skills/SKILL.md).
 
-**References:** [skills/references/config.md](skills/references/config.md), [skills/references/WHERE.md](skills/references/WHERE.md), [skills/references/WHEN.md](skills/references/WHEN.md), [skills/references/MCP.md](skills/references/MCP.md).
+**References:** [skills/references/config.md](skills/references/config.md), [skills/references/WHERE.md](skills/references/WHERE.md), [skills/references/WHEN.md](skills/references/WHEN.md), [skills/references/WHAT.md](skills/references/WHAT.md), [skills/references/MCP.md](skills/references/MCP.md).
 
 ## Development
 

@@ -63,7 +63,16 @@ var urbanMacroBuckets = []string{
 // UnitIDsWithUrbanMacroZone returns sorted, deduplicated unit IDs for a
 // heuristic geography bucket (excluding unknown IDs). Second return is false if
 // input is not a known bucket.
+//
+// Aliases capital / cidade / municipio / grande-sp union all *municipal* macro
+// zones (zona-central, norte, sul, leste, oeste, metropolitana) — i.e. Greater
+// São Paulo city coverage without interior or litoral. This is usually what
+// people mean by "SESC SP na capital"; the label metropolitana alone is only a
+// small periphery subset in this table, not the full metro.
 func UnitIDsWithUrbanMacroZone(zoneLabel string) ([]string, bool) {
+	if ids, ok := unitIDsCapitalMunicipalityUnion(zoneLabel); ok {
+		return ids, true
+	}
 	z := CanonicalUrbanMacroZone(zoneLabel)
 	if z == "" {
 		return nil, false
@@ -79,6 +88,58 @@ func UnitIDsWithUrbanMacroZone(zoneLabel string) ([]string, bool) {
 	}
 	sort.Strings(out)
 	return dedupe(out), true
+}
+
+var capitalMunicipalityMacroZones = map[string]bool{
+	ZoneCentral:       true,
+	ZoneNorte:         true,
+	ZoneSul:           true,
+	ZoneLeste:         true,
+	ZoneOeste:         true,
+	ZoneMetropolitana: true,
+}
+
+func unitIDsCapitalMunicipalityUnion(label string) ([]string, bool) {
+	if !isCapitalMunicipalityAlias(label) {
+		return nil, false
+	}
+	var out []string
+	for id, zone := range urbanMacroByID {
+		if capitalMunicipalityMacroZones[zone] {
+			out = append(out, id)
+		}
+	}
+	if len(out) == 0 {
+		return nil, false
+	}
+	sort.Strings(out)
+	return dedupe(out), true
+}
+
+func isCapitalMunicipalityAlias(label string) bool {
+	k := strings.ToLower(strings.TrimSpace(label))
+	k = strings.ReplaceAll(k, " ", "-")
+	k = strings.ReplaceAll(k, "_", "-")
+	for strings.Contains(k, "--") {
+		k = strings.ReplaceAll(k, "--", "-")
+	}
+	compact := strings.ReplaceAll(k, "-", "")
+	switch compact {
+	case "capital", "capitalsp", "capitalsaopaulo", "spcapital", "grandesp", "cidade", "cidadesp", "municipio":
+		return true
+	default:
+		return false
+	}
+}
+
+// IsBuiltinWhereGeography reports whether label is a heuristic zone or the
+// capital/cidade/… composite (pass through to where.Resolve without treating
+// it as a venue slug in the CLI).
+func IsBuiltinWhereGeography(label string) bool {
+	if isCapitalMunicipalityAlias(label) {
+		return true
+	}
+	return CanonicalUrbanMacroZone(label) != ""
 }
 
 // urbanMacroByID keys match normalize.Unit.ID / presets.Unit.ID.
@@ -126,6 +187,18 @@ var urbanMacroByID = map[string]string{
 	"41":   ZoneInterior,
 	"42":   ZoneInterior,
 	"1005": ZoneInterior,
+}
+
+// BuiltinWhereGeographyExamples lists tokens users may pass for macro geography
+// or special aliases (for help text; CanonicalUrbanMacroZone accepts more flexibly).
+func BuiltinWhereGeographyExamples() []string {
+	out := append([]string(nil), urbanMacroBuckets...)
+	out = append(out,
+		"centro", "center", "default",
+		"capital", "cidade", "municipio", "grande-sp",
+	)
+	sort.Strings(out)
+	return dedupe(out)
 }
 
 func init() {
