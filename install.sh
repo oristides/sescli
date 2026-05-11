@@ -1,16 +1,47 @@
 #!/usr/bin/env sh
-# One-line install for sescli + sesmcp.
-# Usage: curl -fsSL https://raw.githubusercontent.com/oristides/sescli/main/install.sh | sh
+# One-line install for sescli + sesmcp (default directory: $HOME/.local/bin).
 #
-# INSTALL_DIR="$HOME/bin" curl -fsSL ... | sh
-# REF=main curl -fsSL ... | sh     # git branch or tag when compiling from source (default: main)
+# Typical (nothing to type except the URL — like other curl | sh installers):
+#   curl -fsSL https://raw.githubusercontent.com/oristides/sescli/main/install.sh | sh
+#
+# Custom install directory (pick one):
+#   curl -fsSL ... | sh -s -- --install-dir "$HOME/bin"
+#   curl -fsSL ... | sh -s -- -d "$HOME/bin"
+#   curl -fsSL ... | env INSTALL_DIR="$HOME/bin" sh
+#
+# From-source fallback uses git ref (default main); set before sh, not only on curl:
+#   curl -fsSL ... | env REF=v0.3.2 sh
 
 set -eu
 
 REPO="oristides/sescli"
 REPO_URL="https://github.com/${REPO}.git"
-INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 GIT_REF="${REF:-main}"
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --install-dir | -d)
+      [ $# -ge 2 ] || {
+        echo "install.sh: $1 requires a directory" >&2
+        exit 1
+      }
+      INSTALL_DIR="$2"
+      shift 2
+      ;;
+    --help | -h)
+      echo "usage: curl -fsSL .../install.sh | sh" >&2
+      echo "       curl -fsSL .../install.sh | sh -s -- --install-dir DIR" >&2
+      echo "env: INSTALL_DIR (optional), REF (optional, for source build)" >&2
+      exit 0
+      ;;
+    *)
+      echo "install.sh: unknown option: $1 (use --help)" >&2
+      exit 1
+      ;;
+  esac
+done
+
+INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 
 # Asset suffix must match GoReleaser naming, e.g. sescli_v1.2.3_linux_amd64.tar.gz / sesmcp_..._windows_amd64.zip
 REL_OS=""

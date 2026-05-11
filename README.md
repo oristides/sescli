@@ -9,29 +9,53 @@
 
 ### One-liner
 
+Default install directory is **`~/.local/bin`** (no environment variables required):
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oristides/sescli/main/install.sh | sh
 ```
+
+Same pattern as other `curl … | sh` installers: nothing to export unless you want a non-default path (see below).
 
 Behaviour:
 
 1. **If** the [latest GitHub Release](https://github.com/oristides/sescli/releases) publishes **GoReleaser** artefacts whose names include **`sescli`** / **`sesmcp`** plus your OS/arch (examples: **`_linux_amd64.tar.gz`**, **`_darwin_arm64.tar.gz`**, **`_windows_amd64.zip`**), both binaries install without Go.
 
-2. **Otherwise** the script clones `main` (or **`REF`**) and runs **`go install ./cmd/sescli ./cmd/sesmcp`** with **`GOBIN`** set to **`~/.local/bin`**, so **`Git` + `Go`** are required (Go version ≥ [`go.mod`](go.mod)).
+2. **Otherwise** the script clones **`main`** (or a **`REF`** you pass into **`sh`**) and runs **`go install ./cmd/sescli ./cmd/sesmcp`** with **`GOBIN`** set to the install dir, so **`Git` + `Go`** are required (Go version ≥ [`go.mod`](go.mod)).
 
-**Install dir:** defaults to **`~/.local/bin`**. Override:
+**Custom install directory** (pick one):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oristides/sescli/main/install.sh | sh -s -- --install-dir "$HOME/bin"
+```
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oristides/sescli/main/install.sh | env INSTALL_DIR="$HOME/bin" sh
 ```
 
-**Git ref** when building from source (branch or tag): `REF=v0.1.0 curl ... | sh` (or export `REF` before `sh`).
+**Git `REF`** when building from source (branch or tag) must be visible to the shell that runs the script, not only `curl`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oristides/sescli/main/install.sh | env REF=v0.3.2 sh
+```
 
 Add to **PATH** if needed:
 
 ```bash
 export PATH="$PATH:$HOME/.local/bin"
 ```
+
+### Which `sescli` is running?
+
+If you have several copies (e.g. `~/.local/bin` vs `$(go env GOPATH)/bin`), the first match on **`PATH`** wins:
+
+```bash
+command -v sescli
+type -a sescli 2>/dev/null || true    # bash: every sescli on PATH
+which -a sescli 2>/dev/null || true  # portable: all matches
+```
+
+Then compare size or date: `ls -l "$(command -v sescli)"`. Install/update with [`install.sh`](install.sh) or `go install` as documented below.
 
 ### Automated releases (how it works)
 
@@ -49,12 +73,17 @@ export PATH="$PATH:$HOME/.local/bin"
 3. Create and push the tag (**either option**):
 
    ```bash
-   # Option A — helper script (from repo root)
+   # Option A — Makefile (tests + next semver tag + push); see Makefile for BUMP= / TAG=
+   make release
+   ```
+
+   ```bash
+   # Option B — helper script (explicit tag)
    ./scripts/release.sh v0.3.1
    ```
 
    ```bash
-   # Option B — by hand
+   # Option C — by hand
    git tag -a v0.3.1 -m "Release v0.3.1"
    git push origin v0.3.1
    ```

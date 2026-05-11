@@ -31,6 +31,19 @@ sescli --when "next wednesday" --where centro --what teatro --format whatsapp --
 
 ```
 
+## Where is `sescli` on this system?
+
+The shell runs the **first** `sescli` found on **`PATH`** (older copies in `~/.local/bin` vs `$(go env GOPATH)/bin` is a common gotcha).
+
+```bash
+command -v sescli                    # directory + name of the binary that will run
+type -a sescli                       # bash: list every sescli on PATH (order matters)
+which -a sescli 2>/dev/null         # portable: all matches on PATH
+ls -l "$(command -v sescli)"         # size/mtime; shows symlinks on many systems
+```
+
+On Linux, **`readlink -f "$(command -v sescli)"`** resolves symlinks to the real file.
+
 ## Reference documentation
 
 In-repo specs (resolution order, presets, timezone, edge cases):
