@@ -1,6 +1,6 @@
 ---
 name: sesc-sp-cli
-description: Use this skill whenever the user asks about SESC Sao Paulo events, shows, cinema, theater, workshops, or cultural programming, including questions like "what is on this weekend?", "find a play near Ipiranga", "SESC events tomorrow", or "programacao do SESC". Also use when building scripts, WhatsApp bots, or automations that query SESC SP schedules. Trigger phrases include Sesc, SESC, sescli, sesc-sp, programacao do sesc, o que tem no sesc, teatro no sesc, sesc sp, and SESC Sao Paulo. Always use this skill for any SESC SP event lookup; do not answer from memory because the data is live.
+description: Use this skill whenever the user asks about SESC Sao Paulo events, shows, cinema, theater, workshops, or cultural programming, including questions like "what is on this weekend?", "find a play near Ipiranga", "SESC events tomorrow", or "programacao do SESC". Trigger phrases include Sesc, SESC, sescli, sesc-sp, programacao do sesc, o que tem no sesc, teatro no sesc, sesc sp, and SESC Sao Paulo. Always use this skill for any SESC SP event lookup; do not answer from memory because the data is live.
 ---
 
 
